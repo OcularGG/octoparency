@@ -190,6 +190,9 @@ select:hover {
 
 .death-detail span:last-child {
   font-weight: 500;
+  max-width: 60%;
+  text-align: right;
+  word-break: break-word;
 }
 
 .death-actions {
@@ -305,7 +308,7 @@ footer {
   padding: 2rem 0;
   text-align: center;
   font-size: 0.875rem;
-  color: var (--light-gray);
+  color: var(--light-gray);
   border-top: 1px solid var(--accent);
 }
 
@@ -323,7 +326,7 @@ footer a:hover {
 .empty-state {
   text-align: center;
   padding: 4rem 2rem;
-  color: var(--light-gray);
+  color: var(--off-white);
   background-color: var(--dark-gray);
   border-radius: 16px;
   box-shadow: var(--card-shadow);
@@ -349,7 +352,7 @@ footer a:hover {
 
 .loading p {
   margin-top: 1rem;
-  color: var(--light-gray);
+  color: var(--off-white);
 }
 
 .loading-spinner {
@@ -387,6 +390,12 @@ footer a:hover {
   border-radius: 8px;
 }
 
+/* Accessibility improvements */
+button:focus-visible, .btn:focus-visible, select:focus-visible {
+  outline: 2px solid var(--white);
+  outline-offset: 2px;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
   header h1 {
@@ -407,5 +416,28 @@ footer a:hover {
   .modal-content {
     width: 95%;
     padding: 1.5rem;
+  }
+}
+
+/* Additional responsive breakpoint for smaller devices */
+@media (max-width: 480px) {
+  header h1 {
+    font-size: 1.75rem;
+  }
+  
+  .death-item {
+    padding: 1.25rem;
+  }
+  
+  .death-item h3 {
+    font-size: 1.2rem;
+  }
+  
+  .modal-content {
+    padding: 1rem;
+  }
+  
+  .modal {
+    padding: 1rem;
   }
 }

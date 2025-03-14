@@ -114,20 +114,89 @@ async function loadAllianceDeaths() {
     deathsList.innerHTML = `
         <div class="loading">
             <div class="loading-spinner"></div>
+            <p>Loading deaths...</p>
         </div>
     `;
     
     try {
-        const deaths = await fetchAllianceDeaths();
-        displayDeaths(deaths);
+        // First try to get cached deaths from the database
+        const { data: cachedDeaths, error: dbError, source } = await window.db.getDeaths({
+            limit: 50,
+            allianceId: 'TH8JjVwVRiuFnalrzESkRQ'  // Double Overcharge ID
+        });
+        
+        if (cachedDeaths && cachedDeaths.length > 0) {
+            console.log(`Displaying ${cachedDeaths.length} deaths from ${source || 'unknown source'}`);
+            displayDeaths(cachedDeaths);
+            
+            // If we got data from localStorage, we should still try to fetch from API
+            // to update our records, but we don't need to block the UI
+            if (source === 'localStorage') {
+                setTimeout(async () => {
+                    try {
+                        console.log('Background refresh from API...');
+                        const apiDeaths = await fetchAllianceDeaths();
+                        if (apiDeaths && apiDeaths.length > 0) {
+                            // Cache the results
+                            await window.db.saveDeath(apiDeaths);
+                            // Only update UI if there are more records or newer ones
+                            if (apiDeaths.length > cachedDeaths.length) {
+                                displayDeaths(apiDeaths);
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Background refresh error:', error);
+                    }
+                }, 100);
+            }
+        } else {
+            // Nothing in cache or db, fetch from API
+            const apiDeaths = await fetchAllianceDeaths();
+            if (apiDeaths && apiDeaths.length > 0) {
+                // Cache the results
+                await window.db.saveDeath(apiDeaths);
+                displayDeaths(apiDeaths);
+            } else {
+                // No deaths found
+                deathsList.innerHTML = `
+                    <div class="empty-state">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="8" x2="12" y2="12"></line>
+                            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                        </svg>
+                        <h3>No Deaths Found</h3>
+                        <p>No recent deaths found for Double Overcharge alliance.</p>
+                        <p>Try selecting a different server region or check back later.</p>
+                    </div>
+                `;
+            }
+        }
     } catch (error) {
         console.error('Error loading deaths:', error);
         deathsList.innerHTML = `
-            <div class="empty-state">
-                <p>Error loading deaths. Please try again.</p>
+            <div class="error-state">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+                <h3>Error Loading Deaths</h3>
                 <p>${error.message}</p>
+                <p>Check your internet connection and try again.</p>
+                <button id="retry-button" class="btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M23 4v6h-6"></path>
+                        <path d="M1 20v-6h6"></path>
+                        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                    </svg>
+                    Retry
+                </button>
             </div>
         `;
+        
+        // Add retry button listener
+        document.getElementById('retry-button')?.addEventListener('click', loadAllianceDeaths);
     }
 }
 
