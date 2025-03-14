@@ -379,7 +379,7 @@ function setAuthenticated(auth) {
 function updateAuthUI() {
     const isAuth = isAuthenticated();
     
-    // Show/hide login overlay
+    // Show/hide login overlayy by default - only when accessing admin features
     loginOverlay.style.display = isAuth ? 'none' : 'flex';
     
     // Show/hide logout button
@@ -402,12 +402,36 @@ function updateAuthUI() {
 }
 
 /**
- * Handle login form submission
+ * Handle login form submissionmpting to use admin features
  * @param {Event} e - Form submit event
- */
-function handleLogin(e) {
+ */ction promptLogin() {
+function handleLogin(e) {splay = 'flex';
     e.preventDefault();
     
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+    // Admin buttons that should trigger login when clicked if not authenticated
+    if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+        setAuthenticated(true);ler = btn.onclick;
+        loginError.textContent = '';
+    } else {if (!isAuthenticated()) {
+        loginError.textContent = 'Invalid username or password';
+        setAuthenticated(false);
+    }           return false;
+}           } else if (originalClickHandler) {
+                return originalClickHandler(e);
+/**         }
+ * Handle logout button click
+ */ });
+function handleLogout() {
+    setAuthenticated(false);
+}**
+ * Handle login form submission
+/**@param {Event} e - Form submit event
+ * Format and display the API error log
+ * @param {Array} log - Error log entries
+ */ e.preventDefault();
+function displayErrorLog(log) {
     const username = document.getElementById('username').value;
     const password = document.getElementById('password').value;
     
@@ -502,65 +526,42 @@ function displayErrorLog(log) {
  */
 function clearErrorLog() {
     window.clearApiErrorLog();
-    displayErrorLog([]);
+    }, 100);rrorLog([]);
 }
 
-/**
- * Export the error log to a downloadable file
- */
-function exportErrorLog() {
-    const log = window.getApiErrorLog();
-    if (!log || log.length === 0) {
-        alert('No errors to export.');
-        return;
-    }
-    
-    const logData = JSON.stringify(log, null, 2);
-    const blob = new Blob([logData], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `battletab-error-log-${new Date().toISOString().split('T')[0]}.json`;
-    link.click();
-    
-    setTimeout(() => {
-        URL.revokeObjectURL(url);
-    }, 100);
-}
-
-function setupEventListeners() {
+// Update setupEventListeners function to include the login cancel button
+function setupEventListeners() {le
     // Refresh events when button is clicked
-    refreshButton.addEventListener('click', loadAllianceEvents);
-    
+    refreshButton.addEventListener('click', loadAllianceEvents);tion exportErrorLog() {
+    ApiErrorLog();
     // Toggle auto-refresh
     autoRefreshToggle.addEventListener('click', () => {
         const currentState = autoRefreshToggle.classList.contains('active');
         toggleAutoRefresh(!currentState);
     });
-    
-    // Change region and refresh events
-    regionSelect.addEventListener('change', () => {
+     null, 2);
+    // Change region and refresh eventscation/json' });
+    regionSelect.addEventListener('change', () => {;
         setApiRegion(regionSelect.value);
-        loadAllianceEvents();
-    });
-    
+        loadAllianceEvents();st link = document.createElement('a');
+    });link.href = url;
+    = `battletab-error-log-${new Date().toISOString().split('T')[0]}.json`;
     // Close modal
     closeButton.addEventListener('click', () => {
         receiptModal.style.display = 'none';
-        currentEventIndex = null;
-    });
+        currentEventIndex = null; URL.revokeObjectURL(url);
+    });}, 100);
     
     // Close modal when clicking outside of it
     window.addEventListener('click', (event) => {
         if (event.target === receiptModal) {
-            receiptModal.style.display = 'none';
+            receiptModal.style.display = 'none';lick', loadAllianceEvents);
             currentEventIndex = null;
-        }
-    });
-    
+        }Toggle auto-refresh
+    });autoRefreshToggle.addEventListener('click', () => {
+    ate = autoRefreshToggle.classList.contains('active');
     // Download receipt
-    downloadButton.addEventListener('click', downloadReceipt);
+    downloadButton.addEventListener('click', downloadReceipt);});
     
     // Key press handlers
     document.addEventListener('keydown', (event) => {
@@ -568,35 +569,53 @@ function setupEventListeners() {
             receiptModal.style.display = 'none';
             currentEventIndex = null;
         }
-    });
-    
+    });// Close modal
+    stener('click', () => {
     // Test receipt button
-    document.getElementById('test-receipt').addEventListener('click', showTestReceipt);
+    document.getElementById('test-receipt').addEventListener('click', showTestReceipt);    currentEventIndex = null;
     
     // Test API button
     document.getElementById('test-api').addEventListener('click', async () => {
         console.log('Test API button clicked'); // Add this line
-        const result = await window.testApiConnection();
-        updateApiStatus();
-        alert(result.status.message);
-    });
+        const result = await window.testApiConnection();== receiptModal) {
+        updateApiStatus();y = 'none';
+        alert(result.status.message);     currentEventIndex = null;
+    });    }
     
     // Authentication event listeners
     loginForm.addEventListener('submit', handleLogin);
-    logoutBtn.addEventListener('click', handleLogout);
+    logoutBtn.addEventListener('click', handleLogout);downloadButton.addEventListener('click', downloadReceipt);
     
     // Error log buttons
     clearErrorLogBtn?.addEventListener('click', clearErrorLog);
-    exportErrorLogBtn?.addEventListener('click', exportErrorLog);
-    
+    exportErrorLogBtn?.addEventListener('click', exportErrorLog);    if (event.key === 'Escape' && receiptModal.style.display === 'flex') {
+    lay = 'none';
     // Listen for error log updates
     document.addEventListener('apiErrorLogUpdated', (event) => {
         if (isAuthenticated()) {
             displayErrorLog(event.detail.log);
+        }Test receipt button
+    });   document.getElementById('test-receipt').addEventListener('click', showTestReceipt);
+    
+    // Cancel login button
+    document.getElementById('login-cancel')?.addEventListener('click', () => {d('test-api').addEventListener('click', async () => {
+        loginOverlay.style.display = 'none';st API button clicked'); // Add this line
+    });    const result = await window.testApiConnection();
+    
+    // Close login on escape keyt.status.message);
+    document.addEventListener('keydown', (event) => {});
+        if (event.key === 'Escape') {
+            if (receiptModal.style.display === 'flex') {nt listeners
+                receiptModal.style.display = 'none';loginForm.addEventListener('submit', handleLogin);
+                currentEventIndex = null;ick', handleLogout);
+            }
+            if (loginOverlay.style.display === 'flex') {// Error log buttons
+                loginOverlay.style.display = 'none';arErrorLog);
+            }
         }
-    });
-}
-
+    });tes
+}ocument.addEventListener('apiErrorLogUpdated', (event) => {
+    if (isAuthenticated()) {
 document.addEventListener('DOMContentLoaded', () => {
     setupEventListeners();
     checkStylesheets();
@@ -604,18 +623,43 @@ document.addEventListener('DOMContentLoaded', () => {
     // Check authentication status
     updateAuthUI();
     
-    // Load initial data
+    // Load initial datas line to set up admin feature access control
     loadAllianceEvents();
     
     // Test API connection on load
     window.testApiConnection().then(() => updateApiStatus());
     
-    // Check if auto-refresh was previously enabled
+    // Check if auto-refresh was previously enabledlways work regardless of auth status
     const autoRefreshEnabled = localStorage.getItem('autoRefreshEnabled') === 'true';
     if (autoRefreshEnabled && isAuthenticated()) {
         toggleAutoRefresh(true);
-    }
+    }dateApiStatus());
     
+    // Initialize error log display if logged in
+    if (isAuthenticated()) {etItem('autoRefreshEnabled') === 'true';
+        displayErrorLog(window.getApiErrorLog());f (autoRefreshEnabled && isAuthenticated()) {
+    }     toggleAutoRefresh(true);
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+});    }        document.body.appendChild(indicator);        indicator.textContent = 'PREVIEW ENVIRONMENT';        indicator.style.zIndex = '9999';        indicator.style.fontWeight = 'bold';        indicator.style.fontSize = '12px';        indicator.style.borderRadius = '4px';        indicator.style.padding = '5px 10px';        indicator.style.color = 'white';        indicator.style.backgroundColor = '#ff6b00';        indicator.style.left = '10px';        indicator.style.bottom = '10px';        indicator.style.position = 'fixed';        const indicator = document.createElement('div');    if (environment === 'preview') {    const { environment } = getEnvironmentConfig();    // Add environment indicator for preview environments    
     // Initialize error log display if logged in
     if (isAuthenticated()) {
         displayErrorLog(window.getApiErrorLog());
