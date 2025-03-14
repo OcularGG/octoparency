@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BattleTab - Albion Online Battle Statistics</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>BattleTab</h1>
+            <p>Albion Online Battle Statistics Tracker</p>
+        </header>
+
+        <div class="search-container">
+            <input type="text" id="player-search" placeholder="Enter player name...">
+            <button id="search-button">Search</button>
+        </div>
+
+        <div id="search-results" class="search-results"></div>
+
+        <div id="player-data" class="player-data hidden">
+            <div class="player-info">
+                <h2 id="player-name"></h2>
+                <div id="player-stats"></div>
+            </div>
+            
+            <div class="battles-container">
+                <h3>Recent Battles</h3>
+                <div class="tabs">
+                    <button class="tab-button active" data-tab="kills">Kills</button>
+                    <button class="tab-button" data-tab="deaths">Deaths</button>
+                </div>
+                <div id="battles-list" class="battles-list"></div>
+            </div>
+        </div>
+
+        <div id="battle-details" class="battle-details hidden">
+            <button id="back-button">← Back to Results</button>
+            <div id="battle-receipt"></div>
+        </div>
+    </div>
+
+    <footer>
+        <p>BattleTab v1.0.2 | Data from <a href="https://albiononline.com" target="_blank">Albion Online</a></p>
+    </footer>
+
+    <script src="js/api.js"></script>
+    <script src="js/receipt.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
