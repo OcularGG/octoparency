@@ -88,13 +88,32 @@ async function fetchWithRetry(endpoint) {
             });
             
             if (!response.ok) {
+                console.error(`HTTP error ${response.status}: ${response.statusText}`);
+                
+                // Check for specific status codes
+                if (response.status === 403) {
+                    apiStatus.message = `Forbidden (403) - Check API access or proxy`;
+                    apiStatus.isWorking = false;
+                    throw new Error(`HTTP error ${response.status}: ${response.statusText}`);
+                }
+                
                 throw new Error(`HTTP error ${response.status}: ${response.statusText}`);
             }
             
-            const data = await response.json();
+            const text = await response.text(); // Get response as text
+            let data;
+            try {
+                data = JSON.parse(text); // Try to parse JSON
+            } catch (e) {
+                console.error('JSON parsing error:', e);
+                console.log('Response text:', text); // Log the actual response
+                throw e;
+            }
+            
             apiStatus.isWorking = true;
             apiStatus.lastChecked = new Date();
             apiStatus.message = 'API connection working';
+            console.log('API data:', data); // Add this line
             return data;
         } catch (error) {
             attempts++;
@@ -242,6 +261,7 @@ async function fetchAllianceEvents(limit = 50, offset = 0) {
 async function testApiConnection() {
     try {
         const testEndpoint = `/alliances/${DOUBLE_OVERCHARGE_ID}`;
+        console.log('Testing API connection with endpoint:', testEndpoint); // Add this line
         const data = await fetchWithRetry(testEndpoint);
         
         apiStatus.isWorking = true;

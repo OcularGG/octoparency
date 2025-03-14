@@ -377,6 +377,7 @@ function setupEventListeners() {
     
     // Test API button
     document.getElementById('test-api').addEventListener('click', async () => {
+        console.log('Test API button clicked'); // Add this line
         const result = await window.testApiConnection();
         updateApiStatus();
         alert(result.status.message);
