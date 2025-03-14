@@ -1,5 +1,5 @@
 /**
- * Generate a restaurant-style receipt as an image
+ * Generate a modern receipt as an image
  * @param {Object} battle - Battle data
  * @param {string} type - 'kills' or 'deaths'
  * @returns {string} - HTML with image data
@@ -13,14 +13,14 @@ async function generateBattleReceipt(battle, type) {
     const victim = battle.Victim;
     const participants = battle.Participants || [];
     
-    // Format the receipt in a restaurant receipt style
+    // Format the receipt in a minimalist receipt style
     let receiptContent = `
 DOUBLE OVERCHARGE
 Death Receipt
 -----------------------------
 Date: ${dateStr}
 Time: ${timeStr}
-Receipt #: ${battle.EventId.substring(0, 6)}
+Receipt #: ${battle.EventId ? battle.EventId.substring(0, 6) : 'N/A'}
 -----------------------------
 
 VICTIM INFO:
@@ -49,13 +49,14 @@ ITEMS LOST:
             { name: "Mount", item: victim.Equipment.Mount }
         ];
         
-        equipment.forEach(slot => {
+        for (const slot of equipment) {
             if (slot.item) {
-                const itemName = slot.item.Type ? slot.item.Type.split('_').pop() : 'Unknown';
+                const itemInfo = await window.getItemInfo(slot.item.Type);
+                const itemName = itemInfo ? itemInfo.Name : slot.item.Type ? slot.item.Type.split('_').pop() : 'Unknown';
                 const tier = slot.item.Quality || '?';
                 receiptContent += `${slot.name.padEnd(10)} T${tier} ${itemName}\n`;
             }
-        });
+        }
     } else {
         receiptContent += "No items recorded\n";
     }
@@ -121,20 +122,13 @@ battletab.vercel.app
     // Return as HTML
     return `
         <img src="${imgData}" alt="Death Receipt for ${victim.Name}" class="receipt-img">
-        <p class="receipt-caption">Death Receipt for ${victim.Name} - ${dateStr}</p>
     `;
 }
 
+// For backward compatibility with existing code
 async function generateReceipt(death) {
-    // Basic receipt generation logic
-    const receiptContent = `
-        <h3>Death Receipt</h3>
-        <p>Victim: ${death.Victim.Name}</p>
-        <p>Killer: ${death.Killer.Name}</p>
-        <p>Time: ${new Date(death.TimeStamp).toLocaleString()}</p>
-        <p>Total Fame: ${death.TotalVictimKillFame}</p>
-    `;
-    return receiptContent;
+    return generateBattleReceipt(death, 'deaths');
 }
 
 window.generateReceipt = generateReceipt;
+window.generateBattleReceipt = generateBattleReceipt;
