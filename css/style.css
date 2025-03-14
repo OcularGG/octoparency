@@ -1,14 +1,15 @@
 :root {
-  --black: #121212;
-  --dark-gray: #1e1e1e;
-  --medium-gray: #2d2d2d;
-  --light-gray: #bbbbbb;
-  --white: #f5f5f5;
-  --accent: #ffffff;
+  --black: #0a0a0a;
+  --dark-gray: #121212;
+  --medium-gray: #222222;
+  --light-gray: #aaaaaa;
+  --white: #ffffff;
+  --off-white: #f8f8f8;
+  --accent: #3a3a3a;
   --danger: #ff4d4d;
-  --font-main: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-mono: 'Courier New', monospace;
-  --shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+  --success: #4caf50;
+  --shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
 }
 
 * {
@@ -18,7 +19,7 @@
 }
 
 body {
-  font-family: var(--font-main);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   background-color: var(--black);
   color: var(--white);
   line-height: 1.6;
@@ -35,17 +36,31 @@ body {
 
 header {
   text-align: center;
-  margin-bottom: 2rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid var(--medium-gray);
+  margin-bottom: 3rem;
+  padding-bottom: 1.5rem;
+  position: relative;
+}
+
+header:after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  height: 1px;
+  width: 60px;
+  background-color: var(--accent);
 }
 
 header h1 {
-  font-size: 2.5rem;
+  font-size: 2.75rem;
   font-weight: 800;
-  letter-spacing: -0.05em;
+  letter-spacing: -0.03em;
   margin-bottom: 0.5rem;
   color: var(--white);
+  background: linear-gradient(to right, #fff, #aaa);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 header p {
@@ -61,10 +76,11 @@ header p {
   border-radius: 12px;
   padding: 1rem 1.5rem;
   margin-bottom: 2rem;
+  box-shadow: var(--shadow);
 }
 
 button, .btn {
-  background-color: var(--medium-gray);
+  background-color: var(--accent);
   color: var(--white);
   border: none;
   border-radius: 8px;
@@ -73,20 +89,22 @@ button, .btn {
   font-size: 0.95rem;
   cursor: pointer;
   transition: all 0.2s ease;
-  font-family: var(--font-main);
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
+  box-shadow: var(--card-shadow);
 }
 
 button:hover, .btn:hover {
   background-color: var(--white);
   color: var(--black);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
 }
 
 button:focus, .btn:focus {
-  outline: 2px solid var(--white);
-  outline-offset: 2px;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(255,255,255,0.5);
 }
 
 button svg, .btn svg {
@@ -95,12 +113,11 @@ button svg, .btn svg {
 }
 
 select {
-  background-color: var(--medium-gray);
+  background-color: var(--accent);
   color: var(--white);
   border: none;
   border-radius: 8px;
   padding: 0.75rem 1rem;
-  font-family: var(--font-main);
   font-size: 0.95rem;
   appearance: none;
   background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
@@ -108,37 +125,42 @@ select {
   background-position: right 1rem center;
   padding-right: 2.5rem;
   cursor: pointer;
+  box-shadow: var(--card-shadow);
+  transition: all 0.2s ease;
 }
 
 select:hover {
   background-color: var(--white);
   color: var(--black);
   background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
 }
 
 #deaths-list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 1.5rem;
-  margin-top: 1rem;
+  margin-top: 1.5rem;
 }
 
 .death-item {
-  background-color: var(--dark-gray);
-  border-radius: 12px;
-  padding: 1.5rem;
-  transition: all 0.2s ease;
+  background: linear-gradient(145deg, var(--dark-gray), var(--medium-gray));
+  border-radius: 16px;
+  padding: 1.75rem;
+  transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
-  box-shadow: var(--shadow);
+  box-shadow: var(--card-shadow);
 }
 
 .death-item:hover {
   transform: translateY(-5px);
+  box-shadow: var(--shadow);
 }
 
 .death-item h3 {
-  font-size: 1.25rem;
+  font-size: 1.4rem;
   margin-bottom: 1rem;
   font-weight: 700;
   color: var(--white);
@@ -153,10 +175,17 @@ select:hover {
 .death-detail {
   display: flex;
   justify-content: space-between;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.death-detail:last-child {
+  border-bottom: none;
 }
 
 .death-detail span:first-child {
   color: var(--light-gray);
+  font-size: 0.9rem;
 }
 
 .death-detail span:last-child {
@@ -189,12 +218,12 @@ select:hover {
   padding: 2rem;
   align-items: center;
   justify-content: center;
-  backdrop-filter: blur(5px);
+  backdrop-filter: blur(10px);
 }
 
 .modal-content {
   background-color: var(--dark-gray);
-  border-radius: 12px;
+  border-radius: 16px;
   padding: 2rem;
   width: 90%;
   max-width: 700px;
@@ -202,40 +231,66 @@ select:hover {
   overflow-y: auto;
   position: relative;
   box-shadow: var(--shadow);
+  border: 1px solid var(--accent);
+  animation: modal-appear 0.3s ease-out;
+}
+
+@keyframes modal-appear {
+  from {
+    opacity: 0;
+    transform: translateY(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.modal-content h2 {
+  margin-bottom: 1.5rem;
+  font-size: 1.8rem;
+  color: var(--white);
+  border-bottom: 1px solid var(--accent);
+  padding-bottom: 1rem;
 }
 
 .close-button {
   position: absolute;
   top: 1rem;
   right: 1rem;
-  background: none;
-  border: none;
+  background-color: transparent;
+  border: 1px solid var(--accent);
   color: var(--white);
-  cursor: pointer;
-  font-size: 1.5rem;
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  background-color: var(--medium-gray);
   transition: all 0.2s ease;
+  box-shadow: none;
+  font-size: 1.5rem;
+  line-height: 1;
 }
 
 .close-button:hover {
   background-color: var(--white);
   color: var(--black);
+  border-color: var(--white);
 }
 
 #receipt-content {
-  margin-top: 1rem;
+  margin: 1rem 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .receipt-img {
   max-width: 100%;
   border-radius: 8px;
   margin-bottom: 1rem;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.3);
 }
 
 .receipt-actions {
@@ -250,36 +305,57 @@ footer {
   padding: 2rem 0;
   text-align: center;
   font-size: 0.875rem;
-  color: var(--light-gray);
-  border-top: 1px solid var(--medium-gray);
+  color: var (--light-gray);
+  border-top: 1px solid var(--accent);
 }
 
 footer a {
   color: var(--white);
   text-decoration: none;
+  transition: all 0.2s ease;
 }
 
 footer a:hover {
+  color: var(--off-white);
   text-decoration: underline;
 }
 
 .empty-state {
   text-align: center;
-  padding: 3rem;
+  padding: 4rem 2rem;
+  color: var(--light-gray);
+  background-color: var(--dark-gray);
+  border-radius: 16px;
+  box-shadow: var(--card-shadow);
+}
+
+.empty-state svg {
+  width: 60px;
+  height: 60px;
+  margin-bottom: 1rem;
   color: var(--light-gray);
 }
 
 .loading {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 3rem;
+  background-color: var(--dark-gray);
+  border-radius: 16px;
+  box-shadow: var(--card-shadow);
+}
+
+.loading p {
+  margin-top: 1rem;
+  color: var(--light-gray);
 }
 
 .loading-spinner {
   width: 40px;
   height: 40px;
-  border: 3px solid var(--medium-gray);
+  border: 3px solid rgba(255,255,255,0.1);
   border-top-color: var(--white);
   border-radius: 50%;
   animation: spin 1s linear infinite;
@@ -291,18 +367,43 @@ footer a:hover {
   }
 }
 
+/* Error state */
+.error-state {
+  text-align: center;
+  padding: 2rem;
+  background-color: rgba(255, 77, 77, 0.1);
+  border-radius: 16px;
+  border-left: 4px solid var(--danger);
+  color: var(--white);
+  margin: 1rem 0;
+}
+
+/* Success message */
+.success-message {
+  background-color: rgba(76, 175, 80, 0.1);
+  border-left: 4px solid var(--success);
+  padding: 1rem;
+  margin: 1rem 0;
+  border-radius: 8px;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
+  header h1 {
+    font-size: 2rem;
+  }
+
   .controls {
     flex-direction: column;
     gap: 1rem;
     align-items: stretch;
+    padding: 1.25rem;
   }
-  
+
   #deaths-list {
     grid-template-columns: 1fr;
   }
-  
+
   .modal-content {
     width: 95%;
     padding: 1.5rem;
