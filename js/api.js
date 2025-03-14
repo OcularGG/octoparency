@@ -29,6 +29,73 @@ let apiStatus = {
     proxy: CORS_PROXIES[0]
 };
 
+// Create error logging system
+const ERROR_LOG_KEY = 'battletab_error_log';
+const MAX_LOG_ENTRIES = 100;
+
+/**
+ * Log an API error with details
+ * @param {Object} errorInfo - Error information object
+ */
+function logApiError(errorInfo) {
+    try {
+        // Get current log
+        const currentLog = JSON.parse(localStorage.getItem(ERROR_LOG_KEY) || '[]');
+        
+        // Add timestamp if not provided
+        if (!errorInfo.timestamp) {
+            errorInfo.timestamp = new Date().toISOString();
+        }
+        
+        // Add to beginning of array for reverse chronological order
+        currentLog.unshift(errorInfo);
+        
+        // Limit log size
+        if (currentLog.length > MAX_LOG_ENTRIES) {
+            currentLog.length = MAX_LOG_ENTRIES;
+        }
+        
+        // Save back to localStorage
+        localStorage.setItem(ERROR_LOG_KEY, JSON.stringify(currentLog));
+        
+        // Dispatch event for UI update
+        const logUpdatedEvent = new CustomEvent('apiErrorLogUpdated', { 
+            detail: { log: currentLog }
+        });
+        document.dispatchEvent(logUpdatedEvent);
+        
+        console.error('API Error:', errorInfo);
+    } catch (e) {
+        console.error('Error logging API error:', e);
+    }
+}
+
+/**
+ * Get the current error log
+ * @returns {Array} - Array of error log entries
+ */
+function getApiErrorLog() {
+    try {
+        return JSON.parse(localStorage.getItem(ERROR_LOG_KEY) || '[]');
+    } catch (e) {
+        console.error('Error retrieving API error log:', e);
+        return [];
+    }
+}
+
+/**
+ * Clear the error log
+ */
+function clearApiErrorLog() {
+    localStorage.removeItem(ERROR_LOG_KEY);
+    
+    // Dispatch event for UI update
+    const logUpdatedEvent = new CustomEvent('apiErrorLogUpdated', { 
+        detail: { log: [] }
+    });
+    document.dispatchEvent(logUpdatedEvent);
+}
+
 /**
  * Set the API region
  * @param {string} region - Region to use for API calls
@@ -81,14 +148,29 @@ async function fetchWithRetry(endpoint) {
             const url = getProxiedUrl(endpoint);
             console.log(`Attempt ${attempts + 1}/${maxAttempts} for: ${url}`);
             
+            const requestStartTime = Date.now();
             const response = await fetch(url, {
                 headers: {
                     'Accept': 'application/json',
                 }
             });
+            const requestDuration = Date.now() - requestStartTime;
             
             if (!response.ok) {
                 console.error(`HTTP error ${response.status}: ${response.statusText}`);
+                
+                // Log the error
+                logApiError({
+                    endpoint,
+                    url,
+                    proxyUsed: apiStatus.proxy,
+                    status: response.status,
+                    statusText: response.statusText,
+                    attempt: attempts + 1,
+                    maxAttempts,
+                    requestDuration,
+                    errorType: 'http_error'
+                });
                 
                 // Check for specific status codes
                 if (response.status === 403) {
@@ -106,18 +188,45 @@ async function fetchWithRetry(endpoint) {
                 data = JSON.parse(text); // Try to parse JSON
             } catch (e) {
                 console.error('JSON parsing error:', e);
-                console.log('Response text:', text); // Log the actual response
+                console.log('Response text:', text);
+                
+                // Log the parsing error
+                logApiError({
+                    endpoint,
+                    url,
+                    proxyUsed: apiStatus.proxy,
+                    attempt: attempts + 1,
+                    maxAttempts,
+                    requestDuration,
+                    errorType: 'json_parse_error',
+                    rawResponse: text.substring(0, 1000), // Limit size
+                    parseError: e.toString()
+                });
+                
                 throw e;
             }
             
             apiStatus.isWorking = true;
             apiStatus.lastChecked = new Date();
             apiStatus.message = 'API connection working';
-            console.log('API data:', data); // Add this line
+            
             return data;
         } catch (error) {
             attempts++;
             console.error(`API fetch attempt ${attempts} failed:`, error);
+            
+            // Log network errors
+            if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
+                logApiError({
+                    endpoint,
+                    url: getProxiedUrl(endpoint),
+                    proxyUsed: apiStatus.proxy,
+                    attempt: attempts,
+                    maxAttempts,
+                    errorType: 'network_error',
+                    errorMessage: error.toString()
+                });
+            }
             
             // Switch to next proxy if we've tried this one twice
             if (attempts % 2 === 0) {
@@ -128,6 +237,17 @@ async function fetchWithRetry(endpoint) {
             if (attempts >= maxAttempts) {
                 apiStatus.isWorking = false;
                 apiStatus.message = `Failed after ${maxAttempts} attempts: ${error.message}`;
+                
+                // Final error log entry
+                logApiError({
+                    endpoint,
+                    proxyUsed: apiStatus.proxy,
+                    errorType: 'max_attempts_reached',
+                    errorMessage: error.toString(),
+                    totalAttempts: attempts,
+                    error: error.toString() // Convert Error to string for storage
+                });
+                
                 throw new Error(`Failed to fetch after ${maxAttempts} attempts: ${error.message}`);
             }
             
@@ -261,8 +381,11 @@ async function fetchAllianceEvents(limit = 50, offset = 0) {
 async function testApiConnection() {
     try {
         const testEndpoint = `/alliances/${DOUBLE_OVERCHARGE_ID}`;
-        console.log('Testing API connection with endpoint:', testEndpoint); // Add this line
+        console.log('Testing API connection with endpoint:', testEndpoint);
+        
+        const testStartTime = Date.now();
         const data = await fetchWithRetry(testEndpoint);
+        const testDuration = Date.now() - testStartTime;
         
         apiStatus.isWorking = true;
         apiStatus.lastChecked = new Date();
@@ -272,7 +395,8 @@ async function testApiConnection() {
         return {
             success: true,
             data: data,
-            status: apiStatus
+            status: apiStatus,
+            duration: testDuration
         };
     } catch (error) {
         apiStatus.isWorking = false;
@@ -295,3 +419,8 @@ window.fetchAllianceKills = fetchAllianceKills;
 window.fetchAllianceEvents = fetchAllianceEvents;
 window.testApiConnection = testApiConnection;
 window.getApiStatus = () => apiStatus;
+
+// Expose error logging functions
+window.getApiErrorLog = getApiErrorLog;
+window.clearApiErrorLog = clearApiErrorLog;
+window.logApiError = logApiError; // For manual logging

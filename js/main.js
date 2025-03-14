@@ -9,6 +9,11 @@ const closeButton = document.querySelector('.close-button');
 const autoRefreshToggle = document.getElementById('auto-refresh-toggle');
 const apiStatusMessage = document.getElementById('api-status-message');
 
+const adminSection = document.getElementById('admin-section');
+const errorLogContainer = document.getElementById('error-log');
+const clearErrorLogBtn = document.getElementById('clear-error-log');
+const exportErrorLogBtn = document.getElementById('export-error-log');
+
 let currentEvents = [];
 let currentEventIndex = null;
 let autoRefreshInterval = null;
@@ -331,6 +336,199 @@ function updateApiStatus() {
     apiStatusMessage.textContent = `${status.message} (Proxy: ${status.proxy})`;
 }
 
+// Authentication variables
+const AUTH_KEY = 'battletab_auth';
+const ADMIN_USERNAME = 'admin';
+const ADMIN_PASSWORD = 'admin';
+
+// Login DOM Elements
+const loginOverlay = document.getElementById('login-overlay');
+const loginForm = document.getElementById('login-form');
+const loginError = document.getElementById('login-error');
+const logoutBtn = document.getElementById('logout-btn');
+
+// Admin buttons
+const adminButtons = document.querySelectorAll('.admin-btn');
+
+/**
+ * Check if user is authenticated
+ * @returns {boolean} Authentication status
+ */
+function isAuthenticated() {
+    return localStorage.getItem(AUTH_KEY) === 'true';
+}
+
+/**
+ * Set authentication state
+ * @param {boolean} auth - Authentication state
+ */
+function setAuthenticated(auth) {
+    if (auth) {
+        localStorage.setItem(AUTH_KEY, 'true');
+    } else {
+        localStorage.removeItem(AUTH_KEY);
+    }
+    
+    // Update UI based on authentication
+    updateAuthUI();
+}
+
+/**
+ * Update UI based on authentication state
+ */
+function updateAuthUI() {
+    const isAuth = isAuthenticated();
+    
+    // Show/hide login overlay
+    loginOverlay.style.display = isAuth ? 'none' : 'flex';
+    
+    // Show/hide logout button
+    logoutBtn.style.display = isAuth ? 'block' : 'none';
+    
+    // Show/hide admin buttons
+    adminButtons.forEach(btn => {
+        btn.style.display = isAuth ? 'flex' : 'none';
+    });
+    
+    // Show/hide admin section with error log
+    if (adminSection) {
+        adminSection.style.display = isAuth ? 'block' : 'none';
+        
+        // Update the error log if admin is logged in
+        if (isAuth) {
+            displayErrorLog(window.getApiErrorLog());
+        }
+    }
+}
+
+/**
+ * Handle login form submission
+ * @param {Event} e - Form submit event
+ */
+function handleLogin(e) {
+    e.preventDefault();
+    
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+    
+    if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+        setAuthenticated(true);
+        loginError.textContent = '';
+    } else {
+        loginError.textContent = 'Invalid username or password';
+        setAuthenticated(false);
+    }
+}
+
+/**
+ * Handle logout button click
+ */
+function handleLogout() {
+    setAuthenticated(false);
+}
+
+/**
+ * Format and display the API error log
+ * @param {Array} log - Error log entries
+ */
+function displayErrorLog(log) {
+    if (!errorLogContainer) return;
+    
+    if (!log || log.length === 0) {
+        errorLogContainer.innerHTML = '<div class="error-log-empty">No errors logged yet.</div>';
+        return;
+    }
+    
+    // Clear existing content
+    errorLogContainer.innerHTML = '';
+    
+    // Add each log entry
+    log.forEach((entry, index) => {
+        const logEntry = document.createElement('div');
+        logEntry.className = 'error-log-entry';
+        
+        // Format timestamp
+        const timestamp = entry.timestamp ? new Date(entry.timestamp) : new Date();
+        const timeString = timestamp.toLocaleString();
+        
+        // Build log entry content
+        let entryHtml = `<div><span class="timestamp">[${timeString}]</span> `;
+        
+        // Add URL if available
+        if (entry.url) {
+            entryHtml += `<span class="url">${entry.url.substring(0, 80)}</span>`;
+        } else if (entry.endpoint) {
+            entryHtml += `<span class="url">Endpoint: ${entry.endpoint}</span>`;
+        }
+        
+        // Add status code if available
+        if (entry.status) {
+            entryHtml += ` <span class="status">(${entry.status} ${entry.statusText || ''})</span>`;
+        }
+        
+        entryHtml += '</div>';
+        
+        // Add error message/type
+        if (entry.errorType) {
+            entryHtml += `<div class="message">Error: ${entry.errorType}`;
+            if (entry.errorMessage) {
+                entryHtml += ` - ${entry.errorMessage}`;
+            }
+            entryHtml += '</div>';
+        }
+        
+        // Add additional details
+        const details = [];
+        if (entry.proxyUsed) details.push(`Proxy: ${entry.proxyUsed}`);
+        if (entry.attempt) details.push(`Attempt: ${entry.attempt}/${entry.maxAttempts}`);
+        if (entry.requestDuration) details.push(`Duration: ${entry.requestDuration}ms`);
+        
+        if (details.length > 0) {
+            entryHtml += `<div class="details">${details.join(' | ')}</div>`;
+        }
+        
+        // Add raw response excerpt if available
+        if (entry.rawResponse) {
+            entryHtml += `<pre class="details">${entry.rawResponse.substring(0, 150)}${entry.rawResponse.length > 150 ? '...' : ''}</pre>`;
+        }
+        
+        logEntry.innerHTML = entryHtml;
+        errorLogContainer.appendChild(logEntry);
+    });
+}
+
+/**
+ * Clear the error log
+ */
+function clearErrorLog() {
+    window.clearApiErrorLog();
+    displayErrorLog([]);
+}
+
+/**
+ * Export the error log to a downloadable file
+ */
+function exportErrorLog() {
+    const log = window.getApiErrorLog();
+    if (!log || log.length === 0) {
+        alert('No errors to export.');
+        return;
+    }
+    
+    const logData = JSON.stringify(log, null, 2);
+    const blob = new Blob([logData], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `battletab-error-log-${new Date().toISOString().split('T')[0]}.json`;
+    link.click();
+    
+    setTimeout(() => {
+        URL.revokeObjectURL(url);
+    }, 100);
+}
+
 function setupEventListeners() {
     // Refresh events when button is clicked
     refreshButton.addEventListener('click', loadAllianceEvents);
@@ -382,11 +580,29 @@ function setupEventListeners() {
         updateApiStatus();
         alert(result.status.message);
     });
+    
+    // Authentication event listeners
+    loginForm.addEventListener('submit', handleLogin);
+    logoutBtn.addEventListener('click', handleLogout);
+    
+    // Error log buttons
+    clearErrorLogBtn?.addEventListener('click', clearErrorLog);
+    exportErrorLogBtn?.addEventListener('click', exportErrorLog);
+    
+    // Listen for error log updates
+    document.addEventListener('apiErrorLogUpdated', (event) => {
+        if (isAuthenticated()) {
+            displayErrorLog(event.detail.log);
+        }
+    });
 }
 
 document.addEventListener('DOMContentLoaded', () => {
     setupEventListeners();
     checkStylesheets();
+    
+    // Check authentication status
+    updateAuthUI();
     
     // Load initial data
     loadAllianceEvents();
@@ -396,7 +612,12 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Check if auto-refresh was previously enabled
     const autoRefreshEnabled = localStorage.getItem('autoRefreshEnabled') === 'true';
-    if (autoRefreshEnabled) {
+    if (autoRefreshEnabled && isAuthenticated()) {
         toggleAutoRefresh(true);
+    }
+    
+    // Initialize error log display if logged in
+    if (isAuthenticated()) {
+        displayErrorLog(window.getApiErrorLog());
     }
 });
