@@ -200,6 +200,35 @@ async function loadAllianceDeaths() {
     }
 }
 
+// Function to check if stylesheets are loading properly
+function checkStylesheets() {
+    const stylesheets = document.querySelectorAll('link[rel="stylesheet"]');
+    let allLoaded = true;
+    
+    stylesheets.forEach(sheet => {
+        if (!sheet.sheet) {
+            console.error(`Failed to load stylesheet: ${sheet.href}`);
+            allLoaded = false;
+        }
+    });
+    
+    if (!allLoaded) {
+        // Alert the user with a banner if stylesheets failed to load
+        const banner = document.createElement('div');
+        banner.style.backgroundColor = '#ff4d4d';
+        banner.style.color = 'white';
+        banner.style.padding = '1rem';
+        banner.style.textAlign = 'center';
+        banner.style.position = 'fixed';
+        banner.style.top = '0';
+        banner.style.left = '0';
+        banner.style.right = '0';
+        banner.style.zIndex = '1000';
+        banner.textContent = 'Warning: Some styles failed to load. Try refreshing the page.';
+        document.body.prepend(banner);
+    }
+}
+
 function setupEventListeners() {
     // Refresh deaths when button is clicked
     refreshButton.addEventListener('click', loadAllianceDeaths);
@@ -238,5 +267,6 @@ function setupEventListeners() {
 
 document.addEventListener('DOMContentLoaded', () => {
     setupEventListeners();
+    checkStylesheets(); // Add this line to check stylesheets
     loadAllianceDeaths();
 });
