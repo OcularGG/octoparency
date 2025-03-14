@@ -1,189 +1,165 @@
-// DOM elements
-const playerSearchInput = document.getElementById('player-search');
-const searchButton = document.getElementById('search-button');
-const searchResultsDiv = document.getElementById('search-results');
-const playerDataDiv = document.getElementById('player-data');
-const playerNameElement = document.getElementById('player-name');
-const playerStatsElement = document.getElementById('player-stats');
-const battlesListDiv = document.getElementById('battles-list');
-const tabButtons = document.querySelectorAll('.tab-button');
-const battleDetailsDiv = document.getElementById('battle-details');
-const backButton = document.getElementById('back-button');
-const battleReceiptDiv = document.getElementById('battle-receipt');
+// DOM Elements
+const deathsList = document.getElementById('deaths-list');
+const refreshButton = document.getElementById('refresh-deaths');
 const regionSelect = document.getElementById('region-select');
+const receiptModal = document.getElementById('receipt-modal');
+const receiptImage = document.getElementById('receipt-image');
+const closeButton = document.querySelector('.close-button');
+const downloadButton = document.getElementById('download-receipt');
+const shareButton = document.getElementById('share-receipt');
 
-// Current player and view state
-let currentPlayerId = null;
-let currentView = 'kills';
+// Double Overcharge Alliance ID
+const DOUBLE_OVERCHARGE_ID = 'TH8JjVwVRiuFnalrzESkRQ';
+let currentDeath = null;
 
-// Initialize event listeners
+// Initialize the application
 function initApp() {
     console.log('Initializing app...');
     
-    // Make sure DOM elements exist before attaching listeners
-    if (!playerSearchInput || !searchButton) {
-        console.error('Critical DOM elements not found. Check HTML structure.');
-        document.getElementById('error-message').textContent = 'Critical DOM elements not found. Check HTML structure.';
-        document.getElementById('error-container').style.display = 'block';
-        return;
-    }
-
-    searchButton.addEventListener('click', handleSearch);
-    playerSearchInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') handleSearch();
-    });
+    // Set up event listeners
+    refreshButton.addEventListener('click', loadAllianceDeaths);
     
-    tabButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            tabButtons.forEach(btn => btn.classList.remove('active'));
-            button.classList.add('active');
-            currentView = button.getAttribute('data-tab');
-            displayBattles(currentPlayerId, currentView);
-        });
-    });
-    
-    backButton.addEventListener('click', () => {
-        battleDetailsDiv.classList.add('hidden');
-        playerDataDiv.classList.remove('hidden');
-    });
-
-    // Initialize region selector
     regionSelect.addEventListener('change', function() {
         const region = this.value;
         if (window.setApiRegion) {
             window.setApiRegion(region);
-        } else {
-            console.error('API region setter function not available');
+            loadAllianceDeaths();
         }
     });
-}
-
-// Handle player search
-async function handleSearch() {
-    const searchTerm = playerSearchInput.value.trim();
-    if (searchTerm.length < 3) {
-        alert('Please enter at least 3 characters for search');
-        return;
-    }
     
-    searchButton.disabled = true;
-    searchButton.textContent = 'Searching...';
-    
-    try {
-        const players = await searchPlayers(searchTerm);
-        displaySearchResults(players);
-    } finally {
-        searchButton.disabled = false;
-        searchButton.textContent = 'Search';
-    }
-}
-
-// Display search results
-function displaySearchResults(players) {
-    searchResultsDiv.innerHTML = '';
-    
-    if (players.length === 0) {
-        searchResultsDiv.innerHTML = '<p>No players found. Try another search term.</p>';
-        return;
-    }
-    
-    players.forEach(player => {
-        const playerCard = document.createElement('div');
-        playerCard.className = 'player-card';
-        playerCard.innerHTML = `
-            <h3>${player.Name}</h3>
-            <p>Guild: ${player.GuildName || 'None'}</p>
-            <p>Alliance: ${player.AllianceName || 'None'}</p>
-            <p>Kill Fame: ${player.KillFame.toLocaleString()}</p>
-        `;
-        
-        playerCard.addEventListener('click', () => {
-            loadPlayerData(player);
-        });
-        
-        searchResultsDiv.appendChild(playerCard);
+    // Modal controls
+    closeButton.addEventListener('click', () => {
+        receiptModal.classList.add('hidden');
     });
+    
+    downloadButton.addEventListener('click', downloadReceipt);
+    shareButton.addEventListener('click', shareReceipt);
+    
+    // Close modal when clicking outside
+    window.addEventListener('click', (e) => {
+        if (e.target === receiptModal) {
+            receiptModal.classList.add('hidden');
+        }
+    });
+    
+    // Load deaths on startup
+    loadAllianceDeaths();
 }
 
-// Load player data
-async function loadPlayerData(player) {
-    currentPlayerId = player.Id;
-    playerNameElement.textContent = player.Name;
-    playerStatsElement.innerHTML = `
-        <p>Guild: ${player.GuildName || 'None'}</p>
-        <p>Alliance: ${player.AllianceName || 'None'}</p>
-        <p>Kill Fame: ${player.KillFame.toLocaleString()}</p>
-        <p>Death Fame: ${player.DeathFame.toLocaleString()}</p>
-        <p>Fame Ratio: ${(player.KillFame / (player.DeathFame || 1)).toFixed(2)}</p>
-    `;
-    
-    // Show player data section, hide search results
-    searchResultsDiv.innerHTML = '';
-    playerDataDiv.classList.remove('hidden');
-    
-    // Display battles (default to kills)
-    displayBattles(currentPlayerId, currentView);
-}
-
-// Display player battles
-async function displayBattles(playerId, type = 'kills') {
-    battlesListDiv.innerHTML = '<p>Loading battles...</p>';
+// Load alliance deaths
+async function loadAllianceDeaths() {
+    deathsList.innerHTML = '<p>Loading deaths...</p>';
     
     try {
-        const battles = type === 'kills' 
-            ? await getPlayerKills(playerId)
-            : await getPlayerDeaths(playerId);
+        const deaths = await getAllianceDeaths(DOUBLE_OVERCHARGE_ID);
         
-        if (battles.length === 0) {
-            battlesListDiv.innerHTML = `<p>No ${type} found for this player.</p>`;
+        if (!deaths || deaths.length === 0) {
+            deathsList.innerHTML = '<p>No recent deaths found for Double Overcharge.</p>';
             return;
         }
         
-        battlesListDiv.innerHTML = '';
-        battles.slice(0, 20).forEach(battle => {
-            const battleCard = document.createElement('div');
-            battleCard.className = 'battle-card';
-            
-            const eventDate = new Date(battle.TimeStamp);
-            const opponents = type === 'kills' 
-                ? battle.Victim.Name
-                : battle.Killer.Name;
-            
-            battleCard.innerHTML = `
-                <h4>${type === 'kills' ? 'Kill' : 'Death'}: ${opponents}</h4>
-                <p>Date: ${eventDate.toLocaleDateString()}</p>
-                <p>Time: ${eventDate.toLocaleTimeString()}</p>
-                <p>Fame: ${battle.TotalVictimKillFame.toLocaleString()}</p>
-            `;
-            
-            battleCard.addEventListener('click', () => {
-                showBattleDetails(battle, type);
-            });
-            
-            battlesListDiv.appendChild(battleCard);
-        });
-        
+        displayDeaths(deaths);
     } catch (error) {
-        battlesListDiv.innerHTML = `<p>Error loading battles: ${error.message}</p>`;
+        console.error('Error loading deaths:', error);
+        deathsList.innerHTML = `<p>Error loading deaths: ${error.message}</p>`;
     }
 }
 
-// Show battle details
-function showBattleDetails(battle, type) {
-    playerDataDiv.classList.add('hidden');
-    battleDetailsDiv.classList.remove('hidden');
+// Display deaths in the interface
+function displayDeaths(deaths) {
+    deathsList.innerHTML = '';
     
-    // Generate receipt using receipt.js
-    const receipt = generateBattleReceipt(battle, type);
-    battleReceiptDiv.innerHTML = receipt;
+    deaths.forEach(death => {
+        const deathCard = document.createElement('div');
+        deathCard.className = 'death-card';
+        
+        const eventDate = new Date(death.TimeStamp);
+        const victim = death.Victim;
+        const killer = death.Killer;
+        
+        deathCard.innerHTML = `
+            <h3>${victim.Name}</h3>
+            <p><strong>Killed by:</strong> ${killer.Name}</p>
+            <p><strong>Date:</strong> ${eventDate.toLocaleDateString()}</p>
+            <p><strong>Time:</strong> ${eventDate.toLocaleTimeString()}</p>
+            <p><strong>Fame:</strong> ${death.TotalVictimKillFame.toLocaleString()}</p>
+        `;
+        
+        deathCard.addEventListener('click', () => {
+            showDeathReceipt(death);
+        });
+        
+        deathsList.appendChild(deathCard);
+    });
 }
 
-// Initialize the app when DOM is loaded
+// Show death receipt in modal
+async function showDeathReceipt(death) {
+    currentDeath = death;
+    
+    // Generate receipt
+    const receiptHTML = await generateBattleReceipt(death, 'deaths');
+    receiptImage.innerHTML = receiptHTML;
+    
+    // Show modal
+    receiptModal.classList.remove('hidden');
+}
+
+// Download receipt as an image
+function downloadReceipt() {
+    if (!currentDeath) return;
+    
+    const img = receiptImage.querySelector('img');
+    if (!img) return;
+    
+    // Create link for download
+    const downloadLink = document.createElement('a');
+    
+    // Format filename with player name and date
+    const victimName = currentDeath.Victim.Name.replace(/\s+/g, '_');
+    const date = new Date(currentDeath.TimeStamp);
+    const dateStr = `${date.getFullYear()}-${(date.getMonth()+1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
+    
+    downloadLink.href = img.src;
+    downloadLink.download = `${victimName}_${dateStr}_receipt.png`;
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    document.body.removeChild(downloadLink);
+}
+
+// Share receipt
+async function shareReceipt() {
+    if (!currentDeath) return;
+    
+    const img = receiptImage.querySelector('img');
+    if (!img) return;
+    
+    // Check if Web Share API is supported
+    if (navigator.share) {
+        try {
+            // Convert data URL to File object
+            const res = await fetch(img.src);
+            const blob = await res.blob();
+            const file = new File([blob], 'death_receipt.png', { type: 'image/png' });
+            
+            await navigator.share({
+                title: 'Double Overcharge Death Receipt',
+                text: `Death receipt for ${currentDeath.Victim.Name}`,
+                files: [file]
+            });
+        } catch (error) {
+            console.error('Error sharing:', error);
+            alert('Failed to share the receipt. You can download it instead.');
+        }
+    } else {
+        alert('Web Share API not supported on this browser. You can download the receipt instead.');
+    }
+}
+
+// Initialize when the DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM loaded, initializing app...');
     try {
         initApp();
-        console.log('App initialization complete');
     } catch (error) {
         console.error('Error initializing app:', error);
         document.getElementById('error-message').textContent = 'Initialization error: ' + error.message;
@@ -191,7 +167,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// Add global error handling
+// Global error handling
 window.addEventListener('unhandledrejection', function(event) {
     console.error('Unhandled promise rejection:', event.reason);
 });

@@ -1,10 +1,10 @@
 /**
- * Generate a ASCII-style receipt for a battle
+ * Generate a restaurant-style receipt as an image
  * @param {Object} battle - Battle data
  * @param {string} type - 'kills' or 'deaths'
- * @returns {string} HTML for the battle receipt
+ * @returns {string} - HTML with image data
  */
-function generateBattleReceipt(battle, type) {
+async function generateBattleReceipt(battle, type) {
     const eventDate = new Date(battle.TimeStamp);
     const dateStr = eventDate.toLocaleDateString();
     const timeStr = eventDate.toLocaleTimeString();
@@ -13,79 +13,114 @@ function generateBattleReceipt(battle, type) {
     const victim = battle.Victim;
     const participants = battle.Participants || [];
     
-    // Format header
-    let receipt = `<pre class="battle-receipt">
-+==============================================+
-|              ALBION ONLINE BATTLE            |
-|             ${dateStr} ${timeStr}            |
-+----------------------------------------------+
-| EVENT TYPE: ${type.toUpperCase()}            |
-+----------------------------------------------+\n`;
+    // Format the receipt in a restaurant receipt style
+    let receiptContent = `
+DOUBLE OVERCHARGE
+Death Receipt
+-----------------------------
+Date: ${dateStr}
+Time: ${timeStr}
+Receipt #: ${battle.EventId.substring(0, 6)}
+-----------------------------
 
-    // Add killer info
-    receipt += `| KILLER: ${killer.Name}
-| GUILD: ${killer.GuildName || 'None'}
-| ALLIANCE: ${killer.AllianceName || 'None'}
-| IP: ${Math.round(killer.AverageItemPower || 0)}
-+----------------------------------------------+\n`;
+VICTIM INFO:
+${victim.Name}
+Guild: ${victim.GuildName || 'None'}
+Item Power: ${Math.round(victim.AverageItemPower || 0)}
 
-    // Add victim info
-    receipt += `| VICTIM: ${victim.Name}
-| GUILD: ${victim.GuildName || 'None'}
-| ALLIANCE: ${victim.AllianceName || 'None'}
-| IP: ${Math.round(victim.AverageItemPower || 0)}
-+----------------------------------------------+\n`;
+KILLER:
+${killer.Name}
+Guild: ${killer.GuildName || 'None'}
+Alliance: ${killer.AllianceName || 'None'}
 
-    // Add fame info
-    receipt += `| TOTAL FAME: ${battle.TotalVictimKillFame.toLocaleString()}
-+----------------------------------------------+\n`;
+-----------------------------
+ITEMS LOST:
+`;
 
-    // Add participants if available
-    if (participants.length > 0) {
-        receipt += `| PARTICIPANTS:
-`;
-        participants.slice(0, 5).forEach(participant => {
-            receipt += `| - ${participant.Name} (${Math.round(participant.DamageDone || 0)} dmg)
-`;
-        });
-        
-        if (participants.length > 5) {
-            receipt += `| + ${participants.length - 5} more...
-`;
-        }
-        
-        receipt += `+----------------------------------------------+\n`;
-    }
-    
-    // Add inventory if available
-    if (victim.Inventory && victim.Inventory.length > 0) {
-        receipt += `| EQUIPMENT:
-`;
-        victim.Equipment = victim.Equipment || {};
+    // Add victim's equipment as line items
+    if (victim.Equipment) {
         const equipment = [
-            { name: "Main Hand", item: victim.Equipment.MainHand },
-            { name: "Off Hand", item: victim.Equipment.OffHand },
+            { name: "Mainhand", item: victim.Equipment.MainHand },
+            { name: "Offhand", item: victim.Equipment.OffHand },
             { name: "Head", item: victim.Equipment.Head },
-            { name: "Armor", item: victim.Equipment.Armor },
+            { name: "Chest", item: victim.Equipment.Armor },
             { name: "Shoes", item: victim.Equipment.Shoes },
-            { name: "Cape", item: victim.Equipment.Cape }
+            { name: "Cape", item: victim.Equipment.Cape },
+            { name: "Mount", item: victim.Equipment.Mount }
         ];
         
         equipment.forEach(slot => {
             if (slot.item) {
-                const itemName = slot.item.Type.split('_').pop();
-                receipt += `| - ${slot.name}: ${itemName} (T${slot.item.Quality})
-`;
+                const itemName = slot.item.Type ? slot.item.Type.split('_').pop() : 'Unknown';
+                const tier = slot.item.Quality || '?';
+                receiptContent += `${slot.name.padEnd(10)} T${tier} ${itemName}\n`;
             }
         });
-        
-        receipt += `+----------------------------------------------+\n`;
+    } else {
+        receiptContent += "No items recorded\n";
     }
     
-    // Close receipt
-    receipt += `|          https://battletab.vercel.app          |
-+==============================================+
-</pre>`;
+    // Add participants as "service charge"
+    if (participants && participants.length > 0) {
+        receiptContent += "\nKILLING PARTY:\n";
+        participants.slice(0, 5).forEach(participant => {
+            receiptContent += `${participant.Name} (Dmg: ${Math.round(participant.DamageDone || 0)})\n`;
+        });
+        
+        if (participants.length > 5) {
+            receiptContent += `+ ${participants.length - 5} more...\n`;
+        }
+    }
     
-    return receipt;
+    // Add totals section
+    receiptContent += `
+-----------------------------
+SUBTOTAL:      ${battle.TotalVictimKillFame.toLocaleString()} Fame
+TAX (0%):      0
+-----------------------------
+TOTAL:         ${battle.TotalVictimKillFame.toLocaleString()} Fame
+
+THANKS FOR DYING!
+PLEASE COME AGAIN
+
+battletab.vercel.app
+`;
+
+    // Generate image from text
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const lineHeight = 20;
+    const font = '14px "Courier New", monospace';
+    ctx.font = font;
+    
+    // Measure text for canvas size
+    const lines = receiptContent.split('\n');
+    const padding = 40;
+    const maxWidth = Math.max(...lines.map(line => ctx.measureText(line).width)) + padding;
+    
+    canvas.width = maxWidth;
+    canvas.height = (lines.length * lineHeight) + padding;
+    
+    // Fill background (white for receipt look)
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Draw text in black
+    ctx.font = font;
+    ctx.fillStyle = 'black';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    
+    lines.forEach((line, index) => {
+        ctx.fillText(line, padding/2, (padding/2) + (index * lineHeight));
+    });
+    
+    // Convert canvas to data URL
+    const imgData = canvas.toDataURL('image/png');
+    
+    // Return as HTML
+    return `
+        <img src="${imgData}" alt="Death Receipt for ${victim.Name}" class="receipt-img">
+        <p class="receipt-caption">Death Receipt for ${victim.Name} - ${dateStr}</p>
+    `;
 }

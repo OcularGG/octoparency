@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BattleTab - Albion Online Battle Statistics</title>
+    <title>Double Overcharge Death Receipts - Albion Online</title>
     <link rel="stylesheet" href="css/style.css">
-    <!-- Add inline script to detect loading issues -->
     <script>
         console.log('Page loading started...');
         window.addEventListener('error', function(e) {
@@ -16,62 +15,57 @@
     </script>
 </head>
 <body>
-    <!-- Add diagnostic elements -->
+    <!-- Error container -->
     <div id="error-container" style="display: none; background: #ff5555; color: white; padding: 20px; margin: 20px; border-radius: 4px;">
         <h2>An error occurred:</h2>
         <div id="error-message"></div>
     </div>
     
     <div id="loading-indicator" style="text-align: center; padding: 40px;">
-        Loading BattleTab... If this message persists, there might be an issue with JavaScript or API connectivity.
+        Loading death receipts for Double Overcharge... If this message persists, there might be an issue with API connectivity.
     </div>
 
     <div class="container" style="display: none;">
         <header>
-            <h1>BattleTab</h1>
-            <p>Albion Online Battle Statistics Tracker</p>
+            <h1>Double Overcharge Death Receipts</h1>
+            <p>Tracking deaths in the Double Overcharge alliance</p>
         </header>
 
-        <div class="search-container">
-            <input type="text" id="player-search" placeholder="Enter player name...">
-            <button id="search-button">Search</button>
-        </div>
-
-        <div class="region-selector">
-            <label for="region-select">Select Region:</label>
-            <select id="region-select">
-                <option value="americas">Americas</option>
-                <option value="europe">Europe</option>
-                <option value="asia">Asia</option>
-            </select>
-        </div>
-
-        <div id="search-results" class="search-results"></div>
-
-        <div id="player-data" class="player-data hidden">
-            <div class="player-info">
-                <h2 id="player-name"></h2>
-                <div id="player-stats"></div>
-            </div>
+        <div class="controls">
+            <button id="refresh-deaths" class="action-button">Refresh Deaths</button>
             
-            <div class="battles-container">
-                <h3>Recent Battles</h3>
-                <div class="tabs">
-                    <button class="tab-button active" data-tab="kills">Kills</button>
-                    <button class="tab-button" data-tab="deaths">Deaths</button>
-                </div>
-                <div id="battles-list" class="battles-list"></div>
+            <div class="region-selector">
+                <label for="region-select">Server:</label>
+                <select id="region-select">
+                    <option value="americas">Americas</option>
+                    <option value="europe">Europe</option>
+                    <option value="asia">Asia</option>
+                </select>
+            </div>
+        </div>
+        
+        <div id="death-feed" class="death-feed">
+            <h2>Recent Deaths</h2>
+            <div id="deaths-list" class="deaths-list">
+                <p>Loading deaths...</p>
             </div>
         </div>
 
-        <div id="battle-details" class="battle-details hidden">
-            <button id="back-button">← Back to Results</button>
-            <div id="battle-receipt"></div>
+        <div id="receipt-modal" class="modal hidden">
+            <div class="modal-content">
+                <span class="close-button">&times;</span>
+                <h2>Death Receipt</h2>
+                <div id="receipt-image" class="receipt-image"></div>
+                <div class="receipt-actions">
+                    <button id="download-receipt" class="action-button">Download</button>
+                    <button id="share-receipt" class="action-button">Share</button>
+                </div>
+            </div>
         </div>
     </div>
 
     <footer>
-        <p>BattleTab v1.1.0 | Data from <a href="https://albiononline.com" target="_blank">Albion Online</a></p>
+        <p>Double Overcharge Death Receipts v1.2.0 | Data from <a href="https://albiononline.com" target="_blank">Albion Online</a></p>
     </footer>
 
     <script src="js/api.js"></script>
@@ -85,31 +79,7 @@
         setTimeout(function() {
             document.querySelector('.container').style.display = 'block';
             document.getElementById('loading-indicator').style.display = 'none';
-            
-            // Test API connection
-            if (window.testApiConnection) {
-                window.testApiConnection();
-            } else {
-                console.error('API test function not available');
-            }
         }, 500);
-
-        // Initialize region selector
-        document.getElementById('region-select').addEventListener('change', function() {
-            const region = this.value;
-            if (window.setApiRegion) {
-                window.setApiRegion(region);
-            } else {
-                console.error('API region setter function not available');
-            }
-        });
-
-        // List available API endpoints
-        if (window.listApiEndpoints) {
-            window.listApiEndpoints();
-        } else {
-            console.error('API endpoints lister function not available');
-        }
     </script>
 </body>
 </html>

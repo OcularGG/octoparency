@@ -1,6 +1,6 @@
 {
   "name": "battletab",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Albion Online battle statistics viewer",
   "private": true,
   "scripts": {
@@ -15,5 +15,8 @@
   },
   "engines": {
     "node": ">=14.0.0"
+  },
+  "dependencies": {
+    "dom-to-image": "^2.6.0"
   }
 }

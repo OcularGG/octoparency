@@ -129,6 +129,63 @@ async function getItemData(itemId) {
 }
 
 /**
+ * Get alliance deaths
+ * @param {string} allianceId - Alliance ID
+ * @param {number} limit - Maximum number of deaths to retrieve
+ * @returns {Promise} Promise with alliance deaths
+ */
+async function getAllianceDeaths(allianceId, limit = 50) {
+    try {
+        // First attempt - try the specific alliance deaths endpoint if it exists
+        try {
+            const response = await fetch(getApiUrl(`/alliances/${allianceId}/deaths?limit=${limit}`));
+            if (response.ok) {
+                return await response.json();
+            }
+        } catch (e) {
+            console.log('Direct alliance deaths endpoint failed, trying alternative method');
+        }
+        
+        // Alternative - search recent deaths and filter
+        const allDeathsResponse = await fetch(getApiUrl(`/events?limit=${limit*2}`));
+        if (!allDeathsResponse.ok) {
+            throw new Error('Network response was not ok');
+        }
+        
+        const allDeaths = await allDeathsResponse.json();
+        
+        // Filter deaths for Double Overcharge alliance
+        const allianceDeaths = allDeaths.filter(death => 
+            death.Victim && 
+            death.Victim.AllianceId === allianceId
+        );
+        
+        return allianceDeaths.slice(0, limit);
+    } catch (error) {
+        console.error('Error fetching alliance deaths:', error);
+        return [];
+    }
+}
+
+/**
+ * Get alliance info
+ * @param {string} allianceId - Alliance ID
+ * @returns {Promise} Promise with alliance info
+ */
+async function getAllianceInfo(allianceId) {
+    try {
+        const response = await fetch(getApiUrl(`/alliances/${allianceId}`));
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching alliance info:', error);
+        return null;
+    }
+}
+
+/**
  * List all available API endpoints
  */
 function listApiEndpoints() {
@@ -168,23 +225,28 @@ function listApiEndpoints() {
     console.log('Available API endpoints:', endpoints);
 }
 
-// Add this function for debugging
+// Test API connection
 function testApiConnection() {
     console.log('Testing API connection...');
-    fetch(getApiUrl('/players/WyzzQOOW5RebNTyrZG7mJQ'))
-        .then(response => {
-            console.log('API test response status:', response.status);
-            return response.json();
-        })
+    getAllianceInfo('TH8JjVwVRiuFnalrzESkRQ')
         .then(data => {
-            console.log('API test data:', data);
+            console.log('Alliance info:', data);
+            getAllianceDeaths('TH8JjVwVRiuFnalrzESkRQ', 5)
+                .then(deaths => {
+                    console.log('Sample deaths:', deaths);
+                })
+                .catch(err => {
+                    console.error('Error getting deaths:', err);
+                });
         })
         .catch(error => {
             console.error('API test error:', error);
         });
 }
 
-// Export the test function and region setter for use in main.js
-window.testApiConnection = testApiConnection;
+// Export functions for use in main.js
 window.setApiRegion = setApiRegion;
+window.getAllianceDeaths = getAllianceDeaths;
+window.getAllianceInfo = getAllianceInfo;
+window.testApiConnection = testApiConnection;
 window.listApiEndpoints = listApiEndpoints;
