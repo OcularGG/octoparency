@@ -83,7 +83,7 @@ header {
 .header-admin-btn {
   position: absolute;
   top: 10px;
-  right: 10px;
+  right: 15px; /* Slightly adjusted right position */
   background-color: var(--dark-gray);
   color: var(--light-gray);
   border: 1px solid var(--light-gray);
@@ -93,12 +93,14 @@ header {
   align-items: center;
   gap: 5px;
   opacity: 0.7;
-  transition: opacity 0.2s ease;
+  transition: opacity 0.2s ease, background-color 0.2s ease;
+  z-index: 10; /* Ensure button is above other elements */
 }
 
 .header-admin-btn:hover {
   opacity: 1;
   color: var(--white);
+  background-color: var(--medium-gray);
 }
 
 header h1 {
@@ -120,7 +122,7 @@ header p {
   opacity: 0.8;
 }
 
-/* Logo styles */
+/* Logo styles - removed border and added animation */
 .logo-container {
   display: flex;
   justify-content: center;
@@ -134,8 +136,27 @@ header p {
   width: 80px;
   height: auto;
   border-radius: 0;
-  border: 1px solid var(--light-gray);
+  /* Border removed as requested */
   object-fit: contain;
+  transition: transform 0.3s ease-in-out;
+}
+
+/* Add hover animation for logo */
+.logo:hover {
+  animation: logo-spin 1s ease-in-out;
+  filter: grayscale(0%) contrast(1.5);
+}
+
+@keyframes logo-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  20% {
+    transform: rotate(15deg); /* Tilt right first */
+  }
+  100% {
+    transform: rotate(360deg); /* Then complete a full spin */
+  }
 }
 
 /* Status indicators with terminal look */
@@ -222,7 +243,7 @@ header p {
 button, .btn {
   background-color: var(--black);
   color: var(--white);
-  border: 1px solid var(--light-gray);
+  border: 1px solid var (--light-gray);
   border-radius: 0;
   padding: 0.75rem 1rem;
   font-family: var(--monospace);
