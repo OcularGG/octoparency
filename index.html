@@ -27,9 +27,9 @@
             <div class="terminal-content" id="terminal-content">
                 <!-- Terminal lines will be added via JS -->
             </div>
-            <!-- Skip button -->
-            <button id="skip-loading" class="skip-loading-btn">Load BattleTab Now</button>
         </div>
+        <!-- Skip button - moved outside terminal window -->
+        <button id="skip-loading" class="skip-loading-btn">Load BattleTab Now</button>
     </div>
     
     <!-- Login Overlay - updated with cancel button -->
@@ -49,6 +49,12 @@
     <!-- Logout Button -->
     <button id="logout-btn" class="btn logout-btn" style="display: none;">Logout</button>
 
+    <!-- Add Admin Login Button outside the container for top-right positioning -->
+    <button id="admin-login-btn" class="header-admin-btn">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+        Admin
+    </button>
+    
     <div class="container">
         <!-- Header -->
         <header>
@@ -58,11 +64,7 @@
             <h1>Double Overcharge Event Tracker</h1>
             <p>Tracking deaths and kills in the Albion Online alliance</p>
             
-            <!-- Add Admin Login Button -->
-            <button id="admin-login-btn" class="header-admin-btn">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-                Admin
-            </button>
+            <!-- Admin button moved outside the header -->
         </header>
         
         <!-- Status Information -->

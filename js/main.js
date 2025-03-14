@@ -497,7 +497,7 @@ function setupTestDataControls() {
     if (!document.getElementById('load-test-data-btn')) {
         const testButton = document.createElement('button');
         testButton.id = 'load-test-data-btn';
-        testButton.className = 'test-btn';
+        testButton.className = 'test-btn admin-btn'; // Add admin-btn class to hide until logged in
         testButton.innerHTML = `
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
