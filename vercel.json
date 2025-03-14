@@ -22,5 +22,15 @@
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "cleanUrls": true,
-  "trailingSlash": false
+  "trailingSlash": false,
+  "git": {
+    "deploymentEnabled": {
+      "main": true,
+      "preview": true
+    }
+  },
+  "github": {
+    "enabled": true,
+    "silent": false
+  }
 }

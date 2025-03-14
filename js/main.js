@@ -387,7 +387,7 @@ function updateAuthUI() {
     
     // Show/hide admin buttons
     adminButtons.forEach(btn => {
-        btn.style.display = isAuth ? 'flex' : 'none';
+        btn.style.display = isAuth ? 'inline-flex' : 'none';
     });
     
     // Show/hide admin section with error log
@@ -619,5 +619,23 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize error log display if logged in
     if (isAuthenticated()) {
         displayErrorLog(window.getApiErrorLog());
+    }
+
+    // Add environment indicator for preview environments
+    const { environment } = getEnvironmentConfig();
+    if (environment === 'preview') {
+        const indicator = document.createElement('div');
+        indicator.style.position = 'fixed';
+        indicator.style.bottom = '10px';
+        indicator.style.left = '10px';
+        indicator.style.backgroundColor = '#ff6b00';
+        indicator.style.color = 'white';
+        indicator.style.padding = '5px 10px';
+        indicator.style.borderRadius = '4px';
+        indicator.style.fontSize = '12px';
+        indicator.style.fontWeight = 'bold';
+        indicator.style.zIndex = '9999';
+        indicator.textContent = 'PREVIEW ENVIRONMENT';
+        document.body.appendChild(indicator);
     }
 });

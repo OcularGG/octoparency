@@ -3,29 +3,74 @@
  * This file provides functions to interact with a Supabase backend
  */
 
-// Supabase configuration using Vercel environment variables
-const SUPABASE_URL = typeof process !== 'undefined' && process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://jjghqgxcccqvsxywvddt.supabase.co';
-const SUPABASE_ANON_KEY = typeof process !== 'undefined' && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpqZ2hxZ3hjY2NxdnN4eXd2ZGR0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTMzMzg4NzIsImV4cCI6MjAyODkxNDg3Mn0.JvOHFdWlc1fHdNjTQnuSNr0TiAQ4jIoZiLGK5l6rMp0';
+// Supabase configuration
+const SUPABASE_URL = 'https://jjghqgxcccqvsxywvddt.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpqZ2hxZ3hjY2NxdnN4eXd2ZGR0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTMzMzg4NzIsImV4cCI6MjAyODkxNDg3Mn0.JvOHFdWlc1fHdNjTQnuSNr0TiAQ4jIoZiLGK5l6rMp0';
 const DOUBLE_OVERCHARGE_ID = 'TH8JjVwVRiuFnalrzESkRQ'; // Alliance ID
 
 // For development, we'll also use localStorage as a fallback cache
 const LOCAL_STORAGE_KEY = 'battleTab_events_cache';
 
 /**
+ * Function to detect environment
+ * @returns {Object} Environment configuration
+ */
+function getEnvironmentConfig() {
+  // Check environment variables first (works in Vercel)
+  const envPreview = typeof process !== 'undefined' && 
+    process.env.NEXT_PUBLIC_IS_PREVIEW === 'true';
+    
+  // Fallback to hostname detection (works for browser-only)
+  const hostnamePreview = typeof window !== 'undefined' && 
+    window.location.hostname.includes('vercel.app') && 
+    !window.location.hostname.includes('battletab.vercel.app');
+    
+  // For local development detection
+  const isLocalDev = typeof window !== 'undefined' && 
+    (window.location.hostname === 'localhost' || 
+     window.location.hostname === '127.0.0.1');
+  
+  // Main production URL detection
+  const isProduction = typeof window !== 'undefined' && 
+    window.location.hostname === 'battletab.vercel.app';
+  
+  // Add debug logging to help troubleshoot environment detection
+  console.log({
+    envPreview,
+    hostnamePreview,
+    hostname: typeof window !== 'undefined' ? window.location.hostname : 'not in browser'
+  });
+  
+  let environment = 'production';
+  if (envPreview || hostnamePreview) {
+    environment = 'preview';
+  } else if (isLocalDev) {
+    environment = 'development';
+  }
+  
+  console.log(`Running in ${environment} environment`);
+  return { environment };
+}
+
+/**
+ * Get table prefix based on environment
+ * @returns {string} Table prefix
+ */
+function getTablePrefix() {
+  const { environment } = getEnvironmentConfig();
+  return environment === 'preview' ? 'preview_' : '';
+}
+
+/**
  * Initialize Supabase client
  * @returns {Object} Supabase client
  */
 function initSupabase() {
-  // Check if Supabase client is available
-  if (typeof supabase === 'undefined') {
-    console.warn('Supabase client not loaded, using localStorage fallback');
-    return createFallbackClient();
-  }
-  
   try {
     // Initialize the actual Supabase client
     const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    console.log('Supabase client initialized successfully');
+    const { environment } = getEnvironmentConfig();
+    console.log(`Supabase client initialized for ${environment} environment`);
     return client;
   } catch (error) {
     console.error('Failed to initialize Supabase client:', error);
@@ -39,7 +84,6 @@ function initSupabase() {
  */
 function createFallbackClient() {
   console.log('Using localStorage fallback for data storage');
-  
   return {
     from: (table) => ({
       select: () => ({
@@ -69,8 +113,6 @@ function createFallbackClient() {
 async function saveToLocalCache(deaths) {
   try {
     const existingData = JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY) || '[]');
-    
-    // For each new death, check if it already exists by EventId
     deaths.forEach(death => {
       const existingIndex = existingData.findIndex(d => d.EventId === death.EventId);
       if (existingIndex >= 0) {
@@ -79,7 +121,6 @@ async function saveToLocalCache(deaths) {
         existingData.push(death);
       }
     });
-    
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(existingData));
     console.log(`Cached ${deaths.length} deaths locally`);
     return { data: deaths };
@@ -140,7 +181,7 @@ async function saveEvents(events) {
       event_data: event
     };
     
-    // Check if this is a death (victim is from our alliance) or killmail (killer is from our alliance)
+    // Check if this is a death or killmail
     if (event.Victim?.AllianceId === DOUBLE_OVERCHARGE_ID) {
       deaths.push(formattedEvent);
     } else if (event.Killer?.AllianceId === DOUBLE_OVERCHARGE_ID) {
@@ -148,17 +189,22 @@ async function saveEvents(events) {
     }
   });
   
+  // Use table prefix for different environments
+  const prefix = getTablePrefix();
+  
   try {
     const results = await Promise.all([
       // Insert or update deaths
       deaths.length > 0 ? supabase
-        .from('deaths')
-        .upsert(deaths, { onConflict: 'event_id' }) : { data: [], error: null },
+        .from(`${prefix}deaths`)
+        .upsert(deaths, { onConflict: 'event_id' }) 
+        : { data: [], error: null },
       
       // Insert or update killmails
       killmails.length > 0 ? supabase
-        .from('killmails')
-        .upsert(killmails, { onConflict: 'event_id' }) : { data: [], error: null }
+        .from(`${prefix}killmails`)
+        .upsert(killmails, { onConflict: 'event_id' }) 
+        : { data: [], error: null }
     ]);
     
     const [deathsResult, killmailsResult] = results;
@@ -197,13 +243,15 @@ async function saveEvents(events) {
  */
 async function getEvents({ limit = 50, allianceId = null, eventType = null }) {
   try {
+    const prefix = getTablePrefix();
+    
     let deathsPromise = Promise.resolve({ data: [] });
     let killmailsPromise = Promise.resolve({ data: [] });
     
     // Fetch deaths if needed
     if (!eventType || eventType === 'death') {
       deathsPromise = supabase
-        .from('deaths')
+        .from(`${prefix}deaths`)
         .select('event_data')
         .order('timestamp', { ascending: false })
         .limit(limit);
@@ -216,7 +264,7 @@ async function getEvents({ limit = 50, allianceId = null, eventType = null }) {
     // Fetch killmails if needed
     if (!eventType || eventType === 'killmail') {
       killmailsPromise = supabase
-        .from('killmails')
+        .from(`${prefix}killmails`)
         .select('event_data')
         .order('timestamp', { ascending: false })
         .limit(limit);
@@ -226,7 +274,6 @@ async function getEvents({ limit = 50, allianceId = null, eventType = null }) {
       }
     }
     
-    // Await both promises
     const [deathsResult, killmailsResult] = await Promise.all([deathsPromise, killmailsPromise]);
     
     // Handle errors
@@ -270,7 +317,6 @@ async function getEvents({ limit = 50, allianceId = null, eventType = null }) {
       
       // Update local cache with the latest data
       await saveToLocalCache(allEvents);
-      
       return { data: allEvents, source: 'supabase' };
     } else {
       console.log('No data in Supabase, checking local cache');
@@ -309,10 +355,14 @@ async function saveReceiptImage(imageData, event) {
     // Create file from blob
     const file = new File([blob], `receipt_${eventId}.png`, { type: 'image/png' });
     
-    // Upload to Supabase storage
+    // Determine storage folder based on environment
+    const { environment } = getEnvironmentConfig();
+    const storagePrefix = environment === 'preview' ? 'preview/' : '';
+    
+    // Upload to Supabase storage with environment prefix
     const { data, error } = await supabase.storage
       .from('receipts')
-      .upload(`${eventType}/${eventId}.png`, file, {
+      .upload(`${storagePrefix}${eventType}/${eventId}.png`, file, {
         upsert: true
       });
     
@@ -324,12 +374,12 @@ async function saveReceiptImage(imageData, event) {
     // Get public URL
     const { data: urlData } = await supabase.storage
       .from('receipts')
-      .getPublicUrl(`${eventType}/${eventId}.png`);
+      .getPublicUrl(`${storagePrefix}${eventType}/${eventId}.png`);
     
     // Store the receipt reference
     await supabase
-      .from('receipts')
-      .upsert({
+      .from('receipts') // Add prefix here
+      .upsert({ 
         event_id: eventId,
         event_type: eventType,
         image_url: urlData.publicUrl
@@ -344,25 +394,32 @@ async function saveReceiptImage(imageData, event) {
 }
 
 // Backward compatibility functions
-async function saveDeath(deaths) {
-  return saveEvents(deaths);
-}
-
 async function getDeaths(options) {
   return getEvents({...options, eventType: 'death'});
 }
 
-// Initialize Supabase client
-const supabase = initSupabase();
+async function saveDeath(deaths) {
+  return saveEvents(deaths);
+}
+
+// Export functions
+window.db = {
+  saveDeath,       // Deprecated but kept for compatibility
+  getDeaths,       // Deprecated but kept for compatibility
+  saveEvents,      // Function to save both deaths and killmails
+  getEvents,       // Function to get both deaths and killmails
+  saveReceiptImage // Updated function to save receipt images with event type
+};
 
 // Test connection on initialization
 (async function testConnection() {
+  const supabase = initSupabase();
   try {
     // Try to query the deaths table
     const { data: deathsData, error: deathsError } = await supabase
       .from('deaths')
       .select('count(*)', { count: 'exact', head: true });
-      
+    
     // Try to query the killmails table
     const { data: killmailsData, error: killmailsError } = await supabase
       .from('killmails')
@@ -377,12 +434,3 @@ const supabase = initSupabase();
     console.error('Exception testing Supabase connection:', error);
   }
 })();
-
-// Export functions
-window.db = {
-  saveDeath,       // Deprecated but kept for compatibility
-  getDeaths,       // Deprecated but kept for compatibility
-  saveEvents,      // Function to save both deaths and killmails
-  getEvents,       // Function to get both deaths and killmails
-  saveReceiptImage // Updated function to save receipt images with event type
-};

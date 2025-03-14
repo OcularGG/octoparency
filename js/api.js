@@ -11,15 +11,33 @@ const API_BASE_URLS = {
 };
 
 // We will try multiple CORS proxies if the primary one fails
+// Updated with more reliable proxies and proper configuration
 const CORS_PROXIES = [
     'https://corsproxy.io/?',
+    'https://proxy.cors.sh/',
+    'https://cors.eu.org/',
     'https://api.allorigins.win/raw?url=',
-    'https://cors-anywhere.herokuapp.com/'
+    'https://crossorigin.me/'
 ];
 
 let currentProxyIndex = 0;
 const DOUBLE_OVERCHARGE_ID = 'TH8JjVwVRiuFnalrzESkRQ'; // Alliance ID
 let selectedRegion = 'americas';
+
+// Added cache management
+const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes in milliseconds
+const API_CACHE_KEY = 'battletab_api_cache';
+const apiCache = loadCacheFromStorage();
+
+// Rate limiting configuration
+const RATE_LIMIT = {
+    maxRequests: 10,        // Maximum requests in time window
+    timeWindow: 60 * 1000,  // 1 minute window
+    requests: [],           // Array to track request timestamps
+    cooldown: false,        // Flag to indicate if we're in cooldown
+    cooldownTime: 2 * 60 * 1000, // 2 minutes cooldown if rate limit hit
+    cooldownUntil: null     // Timestamp when cooldown ends
+};
 
 // Store the result of connectivity tests
 let apiStatus = {
@@ -32,6 +50,89 @@ let apiStatus = {
 // Create error logging system
 const ERROR_LOG_KEY = 'battletab_error_log';
 const MAX_LOG_ENTRIES = 100;
+
+/**
+ * Load cache from localStorage
+ */
+function loadCacheFromStorage() {
+    try {
+        const cache = JSON.parse(localStorage.getItem(API_CACHE_KEY) || '{}');
+        
+        // Clean expired cache entries
+        const now = Date.now();
+        for (const key in cache) {
+            if (cache[key].expiry < now) {
+                delete cache[key];
+            }
+        }
+        
+        return cache;
+    } catch (e) {
+        console.warn('Failed to load cache from localStorage:', e);
+        return {};
+    }
+}
+
+/**
+ * Save cache to localStorage
+ */
+function saveCacheToStorage() {
+    try {
+        localStorage.setItem(API_CACHE_KEY, JSON.stringify(apiCache));
+    } catch (e) {
+        console.warn('Failed to save cache to localStorage:', e);
+    }
+}
+
+/**
+ * Check if a request would exceed rate limits
+ * @returns {boolean} - True if request is allowed, false if rate limited
+ */
+function checkRateLimit() {
+    const now = Date.now();
+    
+    // Check if we're in cooldown
+    if (RATE_LIMIT.cooldown && RATE_LIMIT.cooldownUntil) {
+        if (now < RATE_LIMIT.cooldownUntil) {
+            const waitTime = Math.ceil((RATE_LIMIT.cooldownUntil - now) / 1000);
+            console.warn(`Rate limit cooldown in effect. Please wait ${waitTime} seconds.`);
+            logApiError({
+                errorType: 'rate_limit_cooldown',
+                errorMessage: `In cooldown period, please wait ${waitTime} seconds`,
+                timestamp: new Date().toISOString()
+            });
+            return false;
+        } else {
+            // Cooldown period is over
+            RATE_LIMIT.cooldown = false;
+            RATE_LIMIT.requests = [];
+        }
+    }
+    
+    // Filter out requests older than the time window
+    RATE_LIMIT.requests = RATE_LIMIT.requests.filter(time => time > now - RATE_LIMIT.timeWindow);
+    
+    // Check if we've hit the limit
+    if (RATE_LIMIT.requests.length >= RATE_LIMIT.maxRequests) {
+        console.warn(`Rate limit reached (${RATE_LIMIT.maxRequests} requests in ${RATE_LIMIT.timeWindow/1000}s). Entering cooldown.`);
+        
+        // Enter cooldown mode
+        RATE_LIMIT.cooldown = true;
+        RATE_LIMIT.cooldownUntil = now + RATE_LIMIT.cooldownTime;
+        
+        logApiError({
+            errorType: 'rate_limit_exceeded',
+            errorMessage: `Exceeded ${RATE_LIMIT.maxRequests} requests in ${RATE_LIMIT.timeWindow/1000}s window`,
+            timestamp: new Date().toISOString()
+        });
+        
+        return false;
+    }
+    
+    // Record this request time
+    RATE_LIMIT.requests.push(now);
+    return true;
+}
 
 /**
  * Log an API error with details
@@ -113,14 +214,30 @@ function setApiRegion(region) {
 }
 
 /**
- * Try to use a different CORS proxy
- * @returns {string} - The new CORS proxy URL
+ * Try to use a different CORS proxy with exponential backoff delay
+ * @param {number} attempt - Current attempt number
+ * @returns {Promise<string>} - The new CORS proxy URL
  */
-function switchCorsProxy() {
+async function switchCorsProxy(attempt = 0) {
     currentProxyIndex = (currentProxyIndex + 1) % CORS_PROXIES.length;
     const newProxy = CORS_PROXIES[currentProxyIndex];
     console.log('Switching to CORS proxy:', newProxy);
     apiStatus.proxy = newProxy;
+    
+    // Calculate exponential backoff delay (100ms, 200ms, 400ms, 800ms, etc.)
+    const backoffDelay = Math.min(2000, 100 * Math.pow(2, attempt));
+    
+    // Reset failed request count when switching proxies
+    // This gives each proxy a fair chance
+    if (attempt > 0 && attempt % CORS_PROXIES.length === 0) {
+        console.log('Tried all proxies, resetting rate limit tracking');
+        RATE_LIMIT.requests = [];
+        RATE_LIMIT.cooldown = false;
+    }
+    
+    // Wait before returning to avoid hammering the new proxy immediately
+    await new Promise(resolve => setTimeout(resolve, backoffDelay));
+    
     return newProxy;
 }
 
@@ -130,16 +247,46 @@ function switchCorsProxy() {
  * @returns {string} - Full URL with proxy
  */
 function getProxiedUrl(endpoint) {
+    // Ensure endpoint starts with /
+    if (!endpoint.startsWith('/')) {
+        endpoint = '/' + endpoint;
+    }
+    
     const baseUrl = API_BASE_URLS[selectedRegion];
-    return `${apiStatus.proxy}${encodeURIComponent(baseUrl + endpoint)}`;
+    
+    // Handle proxy-specific URL formatting
+    const proxy = apiStatus.proxy;
+    if (proxy === 'https://api.allorigins.win/raw?url=') {
+        // This proxy requires full URL encoding
+        return `${proxy}${encodeURIComponent(baseUrl + endpoint)}`;
+    } else if (proxy === 'https://corsproxy.io/?') {
+        // This proxy expects the URL right after the ?
+        return `${proxy}${encodeURIComponent(baseUrl + endpoint)}`;
+    } else {
+        // Most proxies expect the URL to be appended directly
+        return `${proxy}${baseUrl}${endpoint}`;
+    }
 }
 
 /**
  * Make a fetch request with retry logic for CORS issues
  * @param {string} endpoint - API endpoint to call
+ * @param {boolean} useCache - Whether to use cache for this request
  * @returns {Promise<any>} - Promise resolving to JSON response
  */
-async function fetchWithRetry(endpoint) {
+async function fetchWithRetry(endpoint, useCache = true) {
+    // Check cache first if enabled
+    const cacheKey = endpoint;
+    if (useCache && apiCache[cacheKey] && apiCache[cacheKey].expiry > Date.now()) {
+        console.log(`Using cached data for ${endpoint}`);
+        return apiCache[cacheKey].data;
+    }
+    
+    // Check rate limits
+    if (!checkRateLimit()) {
+        throw new Error('Rate limit exceeded, please wait before making more requests');
+    }
+    
     let attempts = 0;
     const maxAttempts = CORS_PROXIES.length * 2;
     
@@ -152,6 +299,7 @@ async function fetchWithRetry(endpoint) {
             const response = await fetch(url, {
                 headers: {
                     'Accept': 'application/json',
+                    'User-Agent': 'BattleTab/1.0 (https://github.com/yourusername/battletab)',
                 }
             });
             const requestDuration = Date.now() - requestStartTime;
@@ -172,13 +320,6 @@ async function fetchWithRetry(endpoint) {
                     errorType: 'http_error'
                 });
                 
-                // Check for specific status codes
-                if (response.status === 403) {
-                    apiStatus.message = `Forbidden (403) - Check API access or proxy`;
-                    apiStatus.isWorking = false;
-                    throw new Error(`HTTP error ${response.status}: ${response.statusText}`);
-                }
-                
                 throw new Error(`HTTP error ${response.status}: ${response.statusText}`);
             }
             
@@ -188,7 +329,7 @@ async function fetchWithRetry(endpoint) {
                 data = JSON.parse(text); // Try to parse JSON
             } catch (e) {
                 console.error('JSON parsing error:', e);
-                console.log('Response text:', text);
+                console.log('Response text:', text.substring(0, 200)); // Show first 200 chars
                 
                 // Log the parsing error
                 logApiError({
@@ -206,9 +347,19 @@ async function fetchWithRetry(endpoint) {
                 throw e;
             }
             
+            // Update API status
             apiStatus.isWorking = true;
             apiStatus.lastChecked = new Date();
             apiStatus.message = 'API connection working';
+            
+            // Cache the response
+            if (useCache) {
+                apiCache[cacheKey] = {
+                    data,
+                    expiry: Date.now() + CACHE_DURATION
+                };
+                saveCacheToStorage();
+            }
             
             return data;
         } catch (error) {
@@ -216,7 +367,7 @@ async function fetchWithRetry(endpoint) {
             console.error(`API fetch attempt ${attempts} failed:`, error);
             
             // Log network errors
-            if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
+            if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
                 logApiError({
                     endpoint,
                     url: getProxiedUrl(endpoint),
@@ -228,9 +379,9 @@ async function fetchWithRetry(endpoint) {
                 });
             }
             
-            // Switch to next proxy if we've tried this one twice
+            // Switch to next proxy if we've tried this one
             if (attempts % 2 === 0) {
-                switchCorsProxy();
+                await switchCorsProxy(Math.floor(attempts / 2));
             }
             
             // If we've tried all proxies multiple times, give up
@@ -244,15 +395,15 @@ async function fetchWithRetry(endpoint) {
                     proxyUsed: apiStatus.proxy,
                     errorType: 'max_attempts_reached',
                     errorMessage: error.toString(),
-                    totalAttempts: attempts,
-                    error: error.toString() // Convert Error to string for storage
+                    totalAttempts: attempts
                 });
                 
                 throw new Error(`Failed to fetch after ${maxAttempts} attempts: ${error.message}`);
             }
             
-            // Wait a bit before retrying
-            await new Promise(r => setTimeout(r, 1000));
+            // Wait before retrying with exponential backoff
+            const backoffDelay = Math.min(5000, 200 * Math.pow(2, Math.floor(attempts / 2)));
+            await new Promise(r => setTimeout(r, backoffDelay));
         }
     }
 }
@@ -424,3 +575,17 @@ window.getApiStatus = () => apiStatus;
 window.getApiErrorLog = getApiErrorLog;
 window.clearApiErrorLog = clearApiErrorLog;
 window.logApiError = logApiError; // For manual logging
+
+// Add this at the end of the file - for preview environment support
+// Test if we're in a preview environment
+const { environment } = getEnvironmentConfig();
+if (environment === 'preview') {
+    console.log('%cPREVIEW ENVIRONMENT', 'background: #ff6b00; color: white; padding: 2px 5px; border-radius: 2px;');
+    
+    // Tag all API requests with preview info
+    const originalFetchWithRetry = fetchWithRetry;
+    window.fetchWithRetry = async function(endpoint, useCache = true) {
+        console.log(`[PREVIEW] Fetching: ${endpoint}`);
+        return originalFetchWithRetry(endpoint, useCache);
+    };
+}
