@@ -27,6 +27,8 @@
             <div class="terminal-content" id="terminal-content">
                 <!-- Terminal lines will be added via JS -->
             </div>
+            <!-- Skip button -->
+            <button id="skip-loading" class="skip-loading-btn">Load BattleTab Now</button>
         </div>
     </div>
     
@@ -203,35 +205,34 @@
         // Set terminal time
         document.getElementById('terminal-time').textContent = new Date().toLocaleTimeString();
         
-        // Loading sequence configuration - now longer and more dramatic
+        // Loading sequence configuration - now with humorous coping/excuse errors
         const loadingMessages = [
             { text: "Initializing BattleTab v2.5.1...", type: "system" },
-            { text: "Connecting to Albion Online API...", type: "system" },
-            { text: "Establishing secure connection...", type: "system" },
-            { text: "ERROR: API authentication failed", type: "error" },
-            { text: "SYSTEM OVERRIDE: Bypassing API authentication...", type: "warning" },
-            { text: "Connection re-established", type: "system" },
-            { text: "Loading battle database...", type: "system" },
-            { text: "WARNING: Database integrity compromised", type: "warning" },
-            { text: "Attempting database recovery...", type: "system" },
-            { text: "Recovery complete: 97.8% data restored", type: "system" },
-            { text: "CRITICAL ERROR: Memory allocation failed", type: "error" },
-            { text: "SYSTEM OVERRIDE: Reallocating memory blocks...", type: "warning" },
             { text: "Scanning player records...", type: "system" },
-            { text: "ERROR 0xF2A7: Record synchronization failed", type: "error" },
-            { text: "SYSTEM OVERRIDE: Forcing sync protocol...", type: "warning" },
-            { text: "Verifying kill data integrity...", type: "system" },
-            { text: "SECURITY ALERT: Unauthorized access detected", type: "error" },
-            { text: "SYSTEM OVERRIDE: Deploying countermeasures...", type: "warning" },
-            { text: "Threat neutralized. Resuming operations.", type: "system" },
+            { text: "ERROR: Player excuse detection triggered", type: "error" },
+            { text: "USER INPUT: \"My internet was lagging!\"", type: "warning" },
+            { text: "SYSTEM OVERRIDE: Replacing excuses with facts...", type: "system" },
+            { text: "Connection established with acceptable latency", type: "success" },
             { text: "Analyzing combat statistics...", type: "system" },
-            { text: "Processing death records...", type: "system" },
-            { text: "WARNING: Corrupted records detected", type: "warning" },
-            { text: "Applying data correction algorithms...", type: "system" },
-            { text: "Rendering battlefield data...", type: "system" },
-            { text: "FATAL ERROR: Graphics rendering subsystem crashed", type: "error" },
-            { text: "SYSTEM OVERRIDE: Activating backup renderer...", type: "warning" },
-            { text: "System recovery complete", type: "system" },
+            { text: "ERROR: Toxic player detected in chat logs", type: "error" },
+            { text: "USER INPUT: \"My team is trash!\"", type: "warning" },
+            { text: "SYSTEM OVERRIDE: Applying self-reflection module...", type: "system" },
+            { text: "Ego calibration complete, continuing operation", type: "success" },
+            { text: "Verifying equipment database...", type: "system" },
+            { text: "WARNING: Ratting behavior analysis initiated", type: "warning" },
+            { text: "USER INPUT: \"I only died because they ganked me 5v1!\"", type: "error" },
+            { text: "SYSTEM OVERRIDE: Deploying situational awareness patch...", type: "system" },
+            { text: "Battlefield positioning protocols updated", type: "success" },
+            { text: "Loading alliance data...", type: "system" },
+            { text: "CRITICAL ERROR: Cope mechanism overload", type: "error" },
+            { text: "USER INPUT: \"They only won because they used meta builds!\"", type: "warning" },
+            { text: "SYSTEM OVERRIDE: Installing git-gud.exe...", type: "system" },
+            { text: "Skill issue resolution complete", type: "success" },
+            { text: "Validating kill data integrity...", type: "system" },
+            { text: "FATAL ERROR: Reality distortion field detected", type: "error" },
+            { text: "USER INPUT: \"I didn't die, it was a tactical sacrifice!\"", type: "warning" },
+            { text: "SYSTEM OVERRIDE: Enabling objective truth module...", type: "system" },
+            { text: "Death counts correctly incremented", type: "success" },
             { text: "BattleTab v2.5.1 initialization successful", type: "success" }
         ];
         
@@ -253,11 +254,7 @@
             if (index >= loadingMessages.length) {
                 // All messages displayed, fade out the loader
                 setTimeout(() => {
-                    const loader = document.getElementById('initial-loader');
-                    loader.style.opacity = '0';
-                    setTimeout(() => {
-                        loader.style.display = 'none';
-                    }, 500);
+                    completeLoading();
                 }, 800);
                 return;
             }
@@ -302,16 +299,16 @@
                     // Determine delay before next message based on type
                     let delay;
                     if (message.type === 'error') {
-                        delay = 1200; // Longer delay after errors
+                        delay = 800; // Shorter delay for errors to keep total time under 30s
                         // Add dramatic blinking effect for errors
                         line.classList.add('blink');
-                        setTimeout(() => line.classList.remove('blink'), 800);
+                        setTimeout(() => line.classList.remove('blink'), 600);
                     } else if (message.type === 'warning') {
-                        delay = 800; // Medium delay after warnings
+                        delay = 700; // Shorter delay for warnings
                     } else if (message.type === 'success') {
-                        delay = 800; // Medium delay for success
+                        delay = 600; // Shorter delay for success
                     } else {
-                        delay = 300; // Normal delay for system messages
+                        delay = 250; // Short delay for system messages
                     }
                     
                     // Move to next message after delay
@@ -319,7 +316,16 @@
                         addTerminalLine(loadingMessages[index + 1], index + 1);
                     }, delay);
                 }, typeSpeed);
-            }, 150);
+            }, 100);
+        }
+        
+        // Function to complete the loading sequence
+        function completeLoading() {
+            const loader = document.getElementById('initial-loader');
+            loader.style.opacity = '0';
+            setTimeout(() => {
+                loader.style.display = 'none';
+            }, 500);
         }
         
         // Start the loading sequence when page loads
@@ -327,6 +333,12 @@
             // Small delay to ensure everything is ready
             setTimeout(() => {
                 addTerminalLine(loadingMessages[0], 0);
+                
+                // Set up skip button event listener
+                document.getElementById('skip-loading').addEventListener('click', (e) => {
+                    e.preventDefault();
+                    completeLoading();
+                });
             }, 300);
         });
     </script>
@@ -336,6 +348,7 @@
     <script src="js/items.js" defer></script>
     <script src="js/database.js" defer></script>
     <script src="js/receipt.js" defer></script>
+    <script src="js/testdata.js" defer></script>
     <script src="js/main.js" defer></script>
 </body>
 </html>

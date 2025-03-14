@@ -463,27 +463,50 @@ const sampleDeathData = {
     ]
 };
 
-// Function to show the test receipt
-function showTestReceipt() {
-    currentEventIndex = 0;
-    currentEvents = [sampleDeathData];
-    
-    // Show loading state
-    receiptContent.innerHTML = `
+// Add a function to load test events
+function loadTestEvents() {
+    deathsList.innerHTML = `
         <div class="loading">
             <div class="loading-spinner"></div>
         </div>
     `;
-    receiptModal.style.display = 'flex'; // Show the modal
 
-    try {
-        // Generate receipt with sample data
-        generateBattleReceipt(sampleDeathData, 'events').then(receiptHTML => {
-            receiptContent.innerHTML = receiptHTML;
-        });
-    } catch (error) {
-        console.error('Error generating test receipt:', error);
-        receiptContent.innerHTML = `<p>Error generating receipt. Please try again.</p>`;
+    setTimeout(() => {
+        const testEvents = window.testData.getTestEvents();
+        currentEvents = testEvents;
+        displayEvents(testEvents);
+        updateLastRefreshTime();
+    }, 500); // Add slight delay to show loading animation
+}
+
+// Add function to show test receipt by index
+function showTestReceipt(index = 0) {
+    const testEvents = window.testData.getTestEvents();
+    if (testEvents && testEvents.length > 0) {
+        currentEvents = testEvents;
+        currentEventIndex = index;
+        showReceipt(index);
+    }
+}
+
+// Load test button functionality
+function setupTestDataControls() {
+    // Add test data button to controls if it doesn't exist
+    const controlsContainer = document.querySelector('.controls');
+    
+    if (!document.getElementById('load-test-data-btn')) {
+        const testButton = document.createElement('button');
+        testButton.id = 'load-test-data-btn';
+        testButton.className = 'test-btn';
+        testButton.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
+            </svg>
+            Test Data
+        `;
+        
+        testButton.addEventListener('click', loadTestEvents);
+        controlsContainer.appendChild(testButton);
     }
 }
 
@@ -755,7 +778,7 @@ function setupEventListeners() {
     });
     
     // Test receipt button
-    document.getElementById('test-receipt').addEventListener('click', showTestReceipt);
+    document.getElementById('test-receipt').addEventListener('click', () => showTestReceipt(0));
     
     // Test API button
     document.getElementById('test-api')?.addEventListener('click', async () => {
@@ -867,6 +890,11 @@ function setupEventListeners() {
     document.getElementById('admin-login-btn')?.addEventListener('click', () => {
         promptLogin();
     });
+
+    // Set up test data controls
+    if (window.testData) {
+        setupTestDataControls();
+    }
 }
 
 // Update setupAdminFeatures to properly handle admin features

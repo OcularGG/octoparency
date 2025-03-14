@@ -469,11 +469,12 @@ select {
 }
 
 .terminal-line {
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.25rem;
   opacity: 0;
   transform: translateY(10px);
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  transition: opacity 0.15s ease, transform 0.15s ease;
   white-space: nowrap;
+  padding: 2px 0;
 }
 
 .terminal-line.active {
@@ -503,7 +504,7 @@ select {
 }
 
 .blink {
-  animation: error-blink 0.5s ease 3;
+  animation: error-blink 0.3s ease 2;
 }
 
 @keyframes error-blink {
@@ -1093,4 +1094,62 @@ footer {
   width: 0%;
   background-color: var(--terminal-green);
   transition: width 1s linear;
+}
+
+/* Skip loading button */
+.skip-loading-btn {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  background-color: var(--terminal-green);
+  color: var(--black);
+  border: none;
+  padding: 8px 12px;
+  font-family: var(--monospace);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  z-index: 1001;
+  box-shadow: 0 0 10px rgba(0, 255, 65, 0.3);
+}
+
+.skip-loading-btn:hover {
+  background-color: var(--white);
+  color: var(--black);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 255, 65, 0.5);
+}
+
+.skip-loading-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(0, 255, 65, 0.4);
+}
+
+/* Test data button styles */
+#load-test-data-btn {
+  background-color: #6a3cb5;
+  border: 1px solid #7a4cc5;
+}
+
+#load-test-data-btn:hover {
+  background-color: #7a4cc5;
+  border-color: #8a5cd5;
+}
+
+/* Add highlight for test data entries */
+.death-item[data-is-test="true"] {
+  border-left-color: #6a3cb5;
+  position: relative;
+}
+
+.death-item[data-is-test="true"]::after {
+  content: "TEST DATA";
+  position: absolute;
+  bottom: 5px;
+  right: 5px;
+  font-size: 0.6rem;
+  color: #6a3cb5;
+  opacity: 0.8;
+  font-family: var(--monospace);
 }
