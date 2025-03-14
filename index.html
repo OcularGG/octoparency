@@ -21,7 +21,7 @@
     <div id="initial-loader" class="initial-loader">
         <div class="terminal-window">
             <div class="terminal-header">
-                <span>BATTLE//TAB Terminal v1.0</span>
+                <span>BATTLE//TAB Terminal v2.5.1</span>
                 <span id="terminal-time"></span>
             </div>
             <div class="terminal-content" id="terminal-content">
@@ -203,18 +203,36 @@
         // Set terminal time
         document.getElementById('terminal-time').textContent = new Date().toLocaleTimeString();
         
-        // Loading sequence configuration
+        // Loading sequence configuration - now longer and more dramatic
         const loadingMessages = [
-            { text: "Initializing system...", type: "system" },
+            { text: "Initializing BattleTab v2.5.1...", type: "system" },
             { text: "Connecting to Albion Online API...", type: "system" },
             { text: "Establishing secure connection...", type: "system" },
+            { text: "ERROR: API authentication failed", type: "error" },
+            { text: "SYSTEM OVERRIDE: Bypassing API authentication...", type: "warning" },
+            { text: "Connection re-established", type: "system" },
             { text: "Loading battle database...", type: "system" },
-            { text: "Scanning alliance records...", type: "system" },
+            { text: "WARNING: Database integrity compromised", type: "warning" },
+            { text: "Attempting database recovery...", type: "system" },
+            { text: "Recovery complete: 97.8% data restored", type: "system" },
+            { text: "CRITICAL ERROR: Memory allocation failed", type: "error" },
+            { text: "SYSTEM OVERRIDE: Reallocating memory blocks...", type: "warning" },
+            { text: "Scanning player records...", type: "system" },
+            { text: "ERROR 0xF2A7: Record synchronization failed", type: "error" },
+            { text: "SYSTEM OVERRIDE: Forcing sync protocol...", type: "warning" },
             { text: "Verifying kill data integrity...", type: "system" },
+            { text: "SECURITY ALERT: Unauthorized access detected", type: "error" },
+            { text: "SYSTEM OVERRIDE: Deploying countermeasures...", type: "warning" },
+            { text: "Threat neutralized. Resuming operations.", type: "system" },
             { text: "Analyzing combat statistics...", type: "system" },
             { text: "Processing death records...", type: "system" },
+            { text: "WARNING: Corrupted records detected", type: "warning" },
+            { text: "Applying data correction algorithms...", type: "system" },
             { text: "Rendering battlefield data...", type: "system" },
-            { text: "System initialization complete.", type: "success" }
+            { text: "FATAL ERROR: Graphics rendering subsystem crashed", type: "error" },
+            { text: "SYSTEM OVERRIDE: Activating backup renderer...", type: "warning" },
+            { text: "System recovery complete", type: "system" },
+            { text: "BattleTab v2.5.1 initialization successful", type: "success" }
         ];
         
         // Function to simulate typing text
@@ -230,7 +248,7 @@
             }, speed);
         }
         
-        // Function to add a new terminal line
+        // Function to add a new terminal line with dramatic delay based on message type
         function addTerminalLine(message, index) {
             if (index >= loadingMessages.length) {
                 // All messages displayed, fade out the loader
@@ -250,7 +268,20 @@
             
             const prompt = document.createElement('span');
             prompt.className = 'terminal-prompt';
-            prompt.textContent = '> ';
+            
+            // Change prompt based on message type
+            if (message.type === 'error') {
+                prompt.textContent = '! ';
+                prompt.style.color = '#ff5555';
+            } else if (message.type === 'warning') {
+                prompt.textContent = '# ';
+                prompt.style.color = '#ffb86c';
+            } else if (message.type === 'success') {
+                prompt.textContent = '√ ';
+                prompt.style.color = '#50fa7b';
+            } else {
+                prompt.textContent = '> ';
+            }
             
             const text = document.createElement('span');
             
@@ -265,30 +296,29 @@
             setTimeout(() => {
                 line.classList.add('active');
                 
-                // Start typing effect
+                // Type text with appropriate speed based on message type
+                const typeSpeed = message.type === 'error' ? 15 : message.type === 'warning' ? 20 : 30;
                 typeText(text, message.text, () => {
-                    // Add a progress bar for some lines
-                    if (index < loadingMessages.length - 1) {
-                        const progress = document.createElement('div');
-                        progress.className = 'terminal-loading';
-                        const progressBar = document.createElement('div');
-                        progressBar.className = 'terminal-progress';
-                        progress.appendChild(progressBar);
-                        line.appendChild(progress);
-                        
-                        // Animate progress bar
-                        setTimeout(() => {
-                            progressBar.style.width = '100%';
-                            setTimeout(() => {
-                                // Start next line after progress bar completes
-                                addTerminalLine(loadingMessages[index + 1], index + 1);
-                            }, 500);
-                        }, 100);
+                    // Determine delay before next message based on type
+                    let delay;
+                    if (message.type === 'error') {
+                        delay = 1200; // Longer delay after errors
+                        // Add dramatic blinking effect for errors
+                        line.classList.add('blink');
+                        setTimeout(() => line.classList.remove('blink'), 800);
+                    } else if (message.type === 'warning') {
+                        delay = 800; // Medium delay after warnings
+                    } else if (message.type === 'success') {
+                        delay = 800; // Medium delay for success
                     } else {
-                        // Last message doesn't have a progress bar
-                        addTerminalLine(null, index + 1);
+                        delay = 300; // Normal delay for system messages
                     }
-                }, 20);
+                    
+                    // Move to next message after delay
+                    setTimeout(() => {
+                        addTerminalLine(loadingMessages[index + 1], index + 1);
+                    }, delay);
+                }, typeSpeed);
             }, 150);
         }
         
