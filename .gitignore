@@ -13,4 +13,4 @@ yarn.lock
 .env.production.local
 
 # Vercel
-.vercel
+.vercel/

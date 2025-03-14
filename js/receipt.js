@@ -124,3 +124,17 @@ battletab.vercel.app
         <p class="receipt-caption">Death Receipt for ${victim.Name} - ${dateStr}</p>
     `;
 }
+
+async function generateReceipt(death) {
+    // Basic receipt generation logic
+    const receiptContent = `
+        <h3>Death Receipt</h3>
+        <p>Victim: ${death.Victim.Name}</p>
+        <p>Killer: ${death.Killer.Name}</p>
+        <p>Time: ${new Date(death.TimeStamp).toLocaleString()}</p>
+        <p>Total Fame: ${death.TotalVictimKillFame}</p>
+    `;
+    return receiptContent;
+}
+
+window.generateReceipt = generateReceipt;

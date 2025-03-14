@@ -3,110 +3,39 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Double Overcharge Death Receipts - Albion Online</title>
+    <title>Double Overcharge Death Tracker</title>
     <link rel="stylesheet" href="css/style.css">
-    <script>
-        console.log('Page loading started...');
-        window.addEventListener('error', function(e) {
-            document.getElementById('error-message').textContent = 
-                'Error: ' + e.message + ' at ' + e.filename + ':' + e.lineno;
-            document.getElementById('error-container').style.display = 'block';
-        });
-    </script>
 </head>
 <body>
-    <!-- Error container -->
-    <div id="error-container" style="display: none; background: #ff5555; color: white; padding: 20px; margin: 20px; border-radius: 4px;">
-        <h2>An error occurred:</h2>
-        <div id="error-message"></div>
-    </div>
-    
-    <div id="loading-indicator" style="text-align: center; padding: 40px;">
-        Loading death receipts for Double Overcharge... If this message persists, there might be an issue with API connectivity.
-    </div>
-
-    <div class="container" style="display: none;">
+    <div class="container">
         <header>
-            <h1>Double Overcharge Death Receipts</h1>
-            <p>Tracking deaths in the Double Overcharge alliance</p>
+            <h1>Double Overcharge Death Tracker</h1>
         </header>
-
-        <div class="controls">
-            <button id="refresh-deaths" class="action-button">Refresh Deaths</button>
-            <button id="test-api" class="action-button">Test API Connection</button>
-            
-            <div class="region-selector">
-                <label for="region-select">Server:</label>
-                <select id="region-select">
-                    <option value="americas">Americas</option>
-                    <option value="europe">Europe</option>
-                    <option value="asia">Asia</option>
-                </select>
-            </div>
-        </div>
         
-        <div id="death-feed" class="death-feed">
-            <h2>Recent Deaths</h2>
-            <div id="deaths-list" class="deaths-list">
-                <p>Loading deaths...</p>
-            </div>
+        <div class="controls">
+            <button id="refresh-deaths">Refresh Deaths</button>
+            <select id="region-select">
+                <option value="americas">Americas</option>
+                <option value="europe">Europe</option>
+                <option value="asia">Asia</option>
+            </select>
         </div>
 
-        <div id="receipt-modal" class="modal hidden">
+        <div id="deaths-list">
+            <!-- Deaths will be loaded here -->
+        </div>
+
+        <div id="receipt-modal" class="modal">
             <div class="modal-content">
                 <span class="close-button">&times;</span>
-                <h2>Death Receipt</h2>
-                <div id="receipt-image" class="receipt-image"></div>
-                <div class="receipt-actions">
-                    <button id="download-receipt" class="action-button">Download</button>
-                    <button id="share-receipt" class="action-button">Share</button>
-                </div>
+                <div id="receipt-content"></div>
+                <button id="download-receipt">Download Receipt</button>
             </div>
         </div>
     </div>
-
-    <footer>
-        <p>Double Overcharge Death Receipts v1.2.0 | Data from <a href="https://albiononline.com" target="_blank">Albion Online</a></p>
-    </footer>
-
+    
     <script src="js/api.js"></script>
     <script src="js/receipt.js"></script>
     <script src="js/main.js"></script>
-    <script>
-        // Diagnostic script
-        console.log('All scripts loaded');
-        
-        // Show the container after a short delay
-        setTimeout(function() {
-            document.querySelector('.container').style.display = 'block';
-            document.getElementById('loading-indicator').style.display = 'none';
-        }, 500);
-
-        // Initialize region selector
-        document.getElementById('region-select').addEventListener('change', function() {
-            const region = this.value;
-            if (window.setApiRegion) {
-                window.setApiRegion(region);
-            } else {
-                console.error('API region setter function not available');
-            }
-        });
-
-        // List available API endpoints
-        if (window.listApiEndpoints) {
-            window.listApiEndpoints();
-        } else {
-            console.error('API endpoints lister function not available');
-        }
-
-        // Test API connection
-        document.getElementById('test-api').addEventListener('click', function() {
-            if (window.testApiConnection) {
-                window.testApiConnection();
-            } else {
-                console.warn('API test function not available');
-            }
-        });
-    </script>
 </body>
 </html>

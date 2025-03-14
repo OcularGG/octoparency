@@ -1,22 +1,20 @@
 {
-  "name": "battletab",
-  "version": "1.1.0",
-  "description": "Albion Online battle statistics viewer",
-  "private": true,
+  "name": "double-overcharge-death-tracker",
+  "version": "1.0.0",
+  "description": "Tracks deaths in the Double Overcharge alliance in Albion Online",
+  "main": "index.html",
   "scripts": {
-    "dev": "serve .",
-    "build": "echo \"Static site, no build required\""
+    "start": "serve .",
+    "dev": "serve ."
   },
   "keywords": ["albion", "battletab", "pvp", "statistics"],
   "author": "",
-  "license": "MIT",
-  "devDependencies": {
-    "serve": "^14.0.0"
+  "license": "ISC",
+  "devDependencies": {},
+  "dependencies": {
+    "serve": "^17.0.0"
   },
   "engines": {
     "node": ">=14.0.0"
-  },
-  "dependencies": {
-    "dom-to-image": "^2.6.0"
   }
 }
