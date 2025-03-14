@@ -33,6 +33,7 @@
 
         <div class="controls">
             <button id="refresh-deaths" class="action-button">Refresh Deaths</button>
+            <button id="test-api" class="action-button">Test API Connection</button>
             
             <div class="region-selector">
                 <label for="region-select">Server:</label>
@@ -80,6 +81,32 @@
             document.querySelector('.container').style.display = 'block';
             document.getElementById('loading-indicator').style.display = 'none';
         }, 500);
+
+        // Initialize region selector
+        document.getElementById('region-select').addEventListener('change', function() {
+            const region = this.value;
+            if (window.setApiRegion) {
+                window.setApiRegion(region);
+            } else {
+                console.error('API region setter function not available');
+            }
+        });
+
+        // List available API endpoints
+        if (window.listApiEndpoints) {
+            window.listApiEndpoints();
+        } else {
+            console.error('API endpoints lister function not available');
+        }
+
+        // Test API connection
+        document.getElementById('test-api').addEventListener('click', function() {
+            if (window.testApiConnection) {
+                window.testApiConnection();
+            } else {
+                console.warn('API test function not available');
+            }
+        });
     </script>
 </body>
 </html>

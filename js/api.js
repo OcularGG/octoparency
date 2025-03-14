@@ -138,21 +138,30 @@ async function getAllianceDeaths(allianceId, limit = 50) {
     try {
         // First attempt - try the specific alliance deaths endpoint if it exists
         try {
-            const response = await fetch(getApiUrl(`/alliances/${allianceId}/deaths?limit=${limit}`));
+            const allianceDeathsUrl = getApiUrl(`/alliances/${allianceId}/deaths?limit=${limit}`);
+            if (DEBUG) console.log('Attempting to fetch alliance deaths directly:', allianceDeathsUrl);
+            const response = await fetch(allianceDeathsUrl);
             if (response.ok) {
-                return await response.json();
+                const data = await response.json();
+                if (DEBUG) console.log('Direct alliance deaths fetch successful:', data);
+                return data;
+            } else {
+                console.warn('Direct alliance deaths fetch failed with status:', response.status);
             }
         } catch (e) {
-            console.log('Direct alliance deaths endpoint failed, trying alternative method');
+            console.warn('Direct alliance deaths fetch failed, trying alternative method:', e);
         }
         
         // Alternative - search recent deaths and filter
-        const allDeathsResponse = await fetch(getApiUrl(`/events?limit=${limit*2}`));
+        const allEventsUrl = getApiUrl(`/events?limit=${limit*2}`);
+        if (DEBUG) console.log('Attempting to fetch all events:', allEventsUrl);
+        const allDeathsResponse = await fetch(allEventsUrl);
         if (!allDeathsResponse.ok) {
-            throw new Error('Network response was not ok');
+            throw new Error(`Network response was not ok: ${allDeathsResponse.status}`);
         }
         
         const allDeaths = await allDeathsResponse.json();
+        if (DEBUG) console.log('All events fetch successful, filtering for alliance:', allDeaths);
         
         // Filter deaths for Double Overcharge alliance
         const allianceDeaths = allDeaths.filter(death => 
@@ -160,10 +169,12 @@ async function getAllianceDeaths(allianceId, limit = 50) {
             death.Victim.AllianceId === allianceId
         );
         
+        if (DEBUG) console.log('Filtered alliance deaths:', allianceDeaths);
+        
         return allianceDeaths.slice(0, limit);
     } catch (error) {
         console.error('Error fetching alliance deaths:', error);
-        return [];
+        throw error; // Re-throw the error so the caller can handle it
     }
 }
 

@@ -61,7 +61,7 @@ async function loadAllianceDeaths() {
         displayDeaths(deaths);
     } catch (error) {
         console.error('Error loading deaths:', error);
-        deathsList.innerHTML = `<p>Error loading deaths: ${error.message}</p>`;
+        deathsList.innerHTML = `<p>Error loading deaths: ${error.message}. Please check the console for details.</p>`;
     }
 }
 
@@ -160,6 +160,13 @@ async function shareReceipt() {
 document.addEventListener('DOMContentLoaded', function() {
     try {
         initApp();
+        
+        // Test API connection on startup
+        if (window.testApiConnection) {
+            window.testApiConnection();
+        } else {
+            console.warn('API test function not available');
+        }
     } catch (error) {
         console.error('Error initializing app:', error);
         document.getElementById('error-message').textContent = 'Initialization error: ' + error.message;
