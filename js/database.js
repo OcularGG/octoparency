@@ -3,15 +3,13 @@
  * This file provides functions to interact with a Supabase backend
  */
 
-// Supabase configuration
-// Note: Connection URI is parsed to extract URL and key components
-const SUPABASE_CONNECTION_URI = 'postgresql://postgres:[Albion321#1]@db.jjghqgxcccqvsxywvddt.supabase.co:5432/postgres';
-const SUPABASE_URL = 'https://jjghqgxcccqvsxywvddt.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpqZ2hxZ3hjY2NxdnN4eXd2ZGR0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTMzMzg4NzIsImV4cCI6MjAyODkxNDg3Mn0.JvOHFdWlc1fHdNjTQnuSNr0TiAQ4jIoZiLGK5l6rMp0';
+// Supabase configuration using Vercel environment variables
+const SUPABASE_URL = typeof process !== 'undefined' && process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://jjghqgxcccqvsxywvddt.supabase.co';
+const SUPABASE_ANON_KEY = typeof process !== 'undefined' && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpqZ2hxZ3hjY2NxdnN4eXd2ZGR0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTMzMzg4NzIsImV4cCI6MjAyODkxNDg3Mn0.JvOHFdWlc1fHdNjTQnuSNr0TiAQ4jIoZiLGK5l6rMp0';
+const DOUBLE_OVERCHARGE_ID = 'TH8JjVwVRiuFnalrzESkRQ'; // Alliance ID
 
 // For development, we'll also use localStorage as a fallback cache
-// when offline or if Supabase connection fails
-const LOCAL_STORAGE_KEY = 'battleTab_deaths_cache';
+const LOCAL_STORAGE_KEY = 'battleTab_events_cache';
 
 /**
  * Initialize Supabase client
@@ -19,14 +17,14 @@ const LOCAL_STORAGE_KEY = 'battleTab_deaths_cache';
  */
 function initSupabase() {
   // Check if Supabase client is available
-  if (typeof createClient === 'undefined') {
+  if (typeof supabase === 'undefined') {
     console.warn('Supabase client not loaded, using localStorage fallback');
     return createFallbackClient();
   }
   
   try {
     // Initialize the actual Supabase client
-    const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     console.log('Supabase client initialized successfully');
     return client;
   } catch (error) {
@@ -109,88 +107,171 @@ async function getFromLocalCache(limit = 50) {
 }
 
 /**
- * Save deaths to database
- * @param {Array} deaths - Death events to save
+ * Save events (deaths or kills) to database
+ * @param {Array} events - Events to save
  * @returns {Promise} - Result of database operation
  */
-async function saveDeath(deaths) {
-  if (!Array.isArray(deaths)) {
-    deaths = [deaths];
+async function saveEvents(events) {
+  if (!Array.isArray(events)) {
+    events = [events];
   }
   
   // Save to local cache regardless of whether Supabase is available
-  await saveToLocalCache(deaths);
+  await saveToLocalCache(events);
   
-  // Transform the data to match our schema
-  const formattedDeaths = deaths.map(death => ({
-    event_id: death.EventId,
-    timestamp: death.TimeStamp,
-    victim_id: death.Victim.Id,
-    victim_name: death.Victim.Name,
-    victim_guild: death.Victim.GuildName,
-    victim_alliance_id: death.Victim.AllianceId,
-    killer_id: death.Killer.Id,
-    killer_name: death.Killer.Name,
-    killer_guild: death.Killer.GuildName,
-    killer_alliance_id: death.Killer.AllianceId,
-    kill_fame: death.TotalVictimKillFame,
-    event_data: death
-  }));
+  // Separate deaths and killmails
+  const deaths = [];
+  const killmails = [];
+  
+  events.forEach(event => {
+    // Format the event data for database storage
+    const formattedEvent = {
+      event_id: event.EventId,
+      timestamp: event.TimeStamp,
+      victim_id: event.Victim?.Id,
+      victim_name: event.Victim?.Name,
+      victim_guild: event.Victim?.GuildName,
+      victim_alliance_id: event.Victim?.AllianceId,
+      killer_id: event.Killer?.Id,
+      killer_name: event.Killer?.Name,
+      killer_guild: event.Killer?.GuildName,
+      killer_alliance_id: event.Killer?.AllianceId,
+      fame: event.TotalVictimKillFame,
+      event_data: event
+    };
+    
+    // Check if this is a death (victim is from our alliance) or killmail (killer is from our alliance)
+    if (event.Victim?.AllianceId === DOUBLE_OVERCHARGE_ID) {
+      deaths.push(formattedEvent);
+    } else if (event.Killer?.AllianceId === DOUBLE_OVERCHARGE_ID) {
+      killmails.push(formattedEvent);
+    }
+  });
   
   try {
-    // Insert or update the deaths in the database
-    const { data, error } = await supabase
-      .from('deaths')
-      .upsert(formattedDeaths, { onConflict: 'event_id' });
+    const results = await Promise.all([
+      // Insert or update deaths
+      deaths.length > 0 ? supabase
+        .from('deaths')
+        .upsert(deaths, { onConflict: 'event_id' }) : { data: [], error: null },
+      
+      // Insert or update killmails
+      killmails.length > 0 ? supabase
+        .from('killmails')
+        .upsert(killmails, { onConflict: 'event_id' }) : { data: [], error: null }
+    ]);
     
-    if (error) {
-      console.error('Error saving deaths to Supabase:', error);
-      return { data: deaths, error, source: 'localStorage' };
+    const [deathsResult, killmailsResult] = results;
+    
+    if (deathsResult.error) {
+      console.error('Error saving deaths to Supabase:', deathsResult.error);
+    } else if (deaths.length > 0) {
+      console.log(`Saved ${deaths.length} deaths to Supabase`);
     }
     
-    console.log('Deaths saved to Supabase successfully');
-    return { data, source: 'supabase' };
+    if (killmailsResult.error) {
+      console.error('Error saving killmails to Supabase:', killmailsResult.error);
+    } else if (killmails.length > 0) {
+      console.log(`Saved ${killmails.length} killmails to Supabase`);
+    }
+    
+    return { 
+      data: events, 
+      source: 'supabase', 
+      deaths: deathsResult.data, 
+      killmails: killmailsResult.data 
+    };
   } catch (error) {
     console.error('Exception saving to Supabase:', error);
-    return { data: deaths, error, source: 'localStorage' };
+    return { data: events, error, source: 'localStorage' };
   }
 }
 
 /**
- * Get deaths from database or local cache
+ * Get events (deaths and/or killmails) from database
  * @param {Object} options - Query options
  * @param {number} options.limit - Max items to retrieve
  * @param {string} options.allianceId - Filter by alliance ID
- * @returns {Promise<Array>} - Death events
+ * @param {string} options.eventType - Filter by event type ('death' or 'killmail')
+ * @returns {Promise<Array>} - Events
  */
-async function getDeaths({ limit = 50, allianceId = null }) {
+async function getEvents({ limit = 50, allianceId = null, eventType = null }) {
   try {
-    // Try to get data from Supabase
-    let query = supabase
-      .from('deaths')
-      .select('event_data')
-      .order('timestamp', { ascending: false });
+    let deathsPromise = Promise.resolve({ data: [] });
+    let killmailsPromise = Promise.resolve({ data: [] });
     
-    if (allianceId) {
-      query = query.eq('victim_alliance_id', allianceId);
+    // Fetch deaths if needed
+    if (!eventType || eventType === 'death') {
+      deathsPromise = supabase
+        .from('deaths')
+        .select('event_data')
+        .order('timestamp', { ascending: false })
+        .limit(limit);
+      
+      if (allianceId) {
+        deathsPromise = deathsPromise.eq('victim_alliance_id', allianceId);
+      }
     }
     
-    const { data, error } = await query.limit(limit);
+    // Fetch killmails if needed
+    if (!eventType || eventType === 'killmail') {
+      killmailsPromise = supabase
+        .from('killmails')
+        .select('event_data')
+        .order('timestamp', { ascending: false })
+        .limit(limit);
+      
+      if (allianceId) {
+        killmailsPromise = killmailsPromise.eq('killer_alliance_id', allianceId);
+      }
+    }
     
-    if (error) {
-      console.warn('Supabase query error, falling back to local cache:', error);
+    // Await both promises
+    const [deathsResult, killmailsResult] = await Promise.all([deathsPromise, killmailsPromise]);
+    
+    // Handle errors
+    if (deathsResult.error) {
+      console.warn('Supabase deaths query error:', deathsResult.error);
+    }
+    
+    if (killmailsResult.error) {
+      console.warn('Supabase killmails query error:', killmailsResult.error);
+    }
+    
+    // If both failed, fall back to local cache
+    if (deathsResult.error && killmailsResult.error) {
+      console.warn('Both queries failed, falling back to local cache');
       return getFromLocalCache(limit);
     }
     
-    if (data && data.length > 0) {
-      console.log(`Retrieved ${data.length} deaths from Supabase`);
-      // Extract event_data from each row
-      const eventData = data.map(row => row.event_data);
+    // Extract event_data from results
+    const deaths = deathsResult.data?.map(row => {
+      const event = row.event_data;
+      event.eventType = 'death';
+      return event;
+    }) || [];
+    
+    const killmails = killmailsResult.data?.map(row => {
+      const event = row.event_data;
+      event.eventType = 'killmail';
+      return event;
+    }) || [];
+    
+    // Combine and sort by timestamp
+    let allEvents = [...deaths, ...killmails].sort((a, b) => 
+      new Date(b.TimeStamp) - new Date(a.TimeStamp)
+    );
+    
+    // Limit the final result set
+    allEvents = allEvents.slice(0, limit);
+    
+    if (allEvents.length > 0) {
+      console.log(`Retrieved ${deaths.length} deaths and ${killmails.length} killmails from Supabase`);
       
-      // Also update local cache with the latest data
-      await saveToLocalCache(eventData);
+      // Update local cache with the latest data
+      await saveToLocalCache(allEvents);
       
-      return { data: eventData, source: 'supabase' };
+      return { data: allEvents, source: 'supabase' };
     } else {
       console.log('No data in Supabase, checking local cache');
       return getFromLocalCache(limit);
@@ -204,11 +285,15 @@ async function getDeaths({ limit = 50, allianceId = null }) {
 /**
  * Save a receipt image to storage
  * @param {string} imageData - Base64 encoded image data
- * @param {string} deathId - ID of the death event
+ * @param {Object} event - Event data
  * @returns {Promise<string>} - URL of the saved image
  */
-async function saveReceiptImage(imageData, deathId) {
+async function saveReceiptImage(imageData, event) {
   try {
+    const eventId = event.EventId;
+    const eventType = event.eventType || 
+                      (event.Victim?.AllianceId === DOUBLE_OVERCHARGE_ID ? 'death' : 'killmail');
+    
     // Convert base64 to blob
     const base64Data = imageData.split(',')[1];
     const byteCharacters = atob(base64Data);
@@ -222,12 +307,12 @@ async function saveReceiptImage(imageData, deathId) {
     const blob = new Blob([byteArray], { type: 'image/png' });
     
     // Create file from blob
-    const file = new File([blob], `receipt_${deathId}.png`, { type: 'image/png' });
+    const file = new File([blob], `receipt_${eventId}.png`, { type: 'image/png' });
     
     // Upload to Supabase storage
     const { data, error } = await supabase.storage
       .from('receipts')
-      .upload(`receipts/${deathId}.png`, file, {
+      .upload(`${eventType}/${eventId}.png`, file, {
         upsert: true
       });
     
@@ -239,22 +324,32 @@ async function saveReceiptImage(imageData, deathId) {
     // Get public URL
     const { data: urlData } = await supabase.storage
       .from('receipts')
-      .getPublicUrl(`receipts/${deathId}.png`);
+      .getPublicUrl(`${eventType}/${eventId}.png`);
     
     // Store the receipt reference
     await supabase
       .from('receipts')
       .upsert({
-        death_event_id: deathId,
+        event_id: eventId,
+        event_type: eventType,
         image_url: urlData.publicUrl
-      }, { onConflict: 'death_event_id' });
+      }, { onConflict: 'event_id' });
     
-    console.log('Receipt saved to Supabase:', urlData.publicUrl);
+    console.log(`Receipt saved to Supabase: ${urlData.publicUrl} (${eventType})`);
     return urlData.publicUrl;
   } catch (error) {
     console.error('Exception saving receipt image:', error);
     return imageData; // Fall back to returning the original image data
   }
+}
+
+// Backward compatibility functions
+async function saveDeath(deaths) {
+  return saveEvents(deaths);
+}
+
+async function getDeaths(options) {
+  return getEvents({...options, eventType: 'death'});
 }
 
 // Initialize Supabase client
@@ -263,9 +358,18 @@ const supabase = initSupabase();
 // Test connection on initialization
 (async function testConnection() {
   try {
-    const { data, error } = await supabase.from('deaths').select('count()', { count: 'exact', head: true });
-    if (error) {
-      console.error('Failed to connect to Supabase:', error);
+    // Try to query the deaths table
+    const { data: deathsData, error: deathsError } = await supabase
+      .from('deaths')
+      .select('count(*)', { count: 'exact', head: true });
+      
+    // Try to query the killmails table
+    const { data: killmailsData, error: killmailsError } = await supabase
+      .from('killmails')
+      .select('count(*)', { count: 'exact', head: true });
+    
+    if (deathsError && killmailsError) {
+      console.error('Failed to connect to Supabase:', deathsError);
     } else {
       console.log('Successfully connected to Supabase database');
     }
@@ -276,7 +380,9 @@ const supabase = initSupabase();
 
 // Export functions
 window.db = {
-  saveDeath,
-  getDeaths,
-  saveReceiptImage
+  saveDeath,       // Deprecated but kept for compatibility
+  getDeaths,       // Deprecated but kept for compatibility
+  saveEvents,      // Function to save both deaths and killmails
+  getEvents,       // Function to get both deaths and killmails
+  saveReceiptImage // Updated function to save receipt images with event type
 };

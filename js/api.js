@@ -133,6 +133,8 @@ async function fetchAllianceDeaths(limit = 50, offset = 0) {
         try {
             const deaths = await fetchWithRetry(allianceEndpoint);
             console.log(`Successfully fetched ${deaths.length} deaths`);
+            // Tag each death event as a "death"
+            deaths.forEach(death => death.eventType = 'death');
             return deaths;
         } catch (error) {
             console.warn('Alliance deaths endpoint failed, trying backup method:', error.message);
@@ -149,11 +151,86 @@ async function fetchAllianceDeaths(limit = 50, offset = 0) {
                 event.Victim.AllianceId === DOUBLE_OVERCHARGE_ID
             );
             
+            // Tag each death event as a "death"
+            allianceDeaths.forEach(death => death.eventType = 'death');
+            
             console.log(`Found ${allianceDeaths.length} alliance deaths in events`);
             return allianceDeaths.slice(0, limit);
         }
     } catch (error) {
         console.error('All fetch methods failed:', error);
+        throw error;
+    }
+}
+
+/**
+ * Fetch kills for the Double Overcharge alliance
+ * @param {number} limit - Maximum number of kills to fetch
+ * @param {number} offset - Offset for pagination
+ * @returns {Promise<Array>} - Array of kill objects
+ */
+async function fetchAllianceKills(limit = 50, offset = 0) {
+    try {
+        // First try: alliance kills endpoint with pagination
+        const allianceEndpoint = `/alliances/${DOUBLE_OVERCHARGE_ID}/kills?limit=${limit}&offset=${offset}`;
+        console.log('Fetching alliance kills from:', allianceEndpoint);
+        
+        try {
+            const kills = await fetchWithRetry(allianceEndpoint);
+            console.log(`Successfully fetched ${kills.length} kills`);
+            // Tag each kill event as a "kill"
+            kills.forEach(kill => kill.eventType = 'kill');
+            return kills;
+        } catch (error) {
+            console.warn('Alliance kills endpoint failed, trying backup method:', error.message);
+            
+            // Second try: general events endpoint filtered for our alliance
+            const eventsEndpoint = `/events?limit=100&offset=${offset}`;
+            const events = await fetchWithRetry(eventsEndpoint);
+            
+            console.log(`Fetched ${events.length} events, filtering for alliance kills`);
+            
+            // Filter for events where killer is in Double Overcharge alliance
+            const allianceKills = events.filter(event => 
+                event.Killer && 
+                event.Killer.AllianceId === DOUBLE_OVERCHARGE_ID
+            );
+            
+            // Tag each kill event as a "kill"
+            allianceKills.forEach(kill => kill.eventType = 'kill');
+            
+            console.log(`Found ${allianceKills.length} alliance kills in events`);
+            return allianceKills.slice(0, limit);
+        }
+    } catch (error) {
+        console.error('All fetch methods failed:', error);
+        throw error;
+    }
+}
+
+/**
+ * Fetch both deaths and kills for the Double Overcharge alliance
+ * @param {number} limit - Maximum number of events to fetch (will be split between deaths and kills)
+ * @param {number} offset - Offset for pagination
+ * @returns {Promise<Array>} - Array of death and kill objects
+ */
+async function fetchAllianceEvents(limit = 50, offset = 0) {
+    try {
+        // Fetch both deaths and kills in parallel
+        const [deaths, kills] = await Promise.all([
+            fetchAllianceDeaths(limit / 2, offset),
+            fetchAllianceKills(limit / 2, offset)
+        ]);
+        
+        // Combine and sort by timestamp (newest first)
+        const allEvents = [...deaths, ...kills].sort((a, b) => 
+            new Date(b.TimeStamp) - new Date(a.TimeStamp)
+        );
+        
+        console.log(`Combined ${deaths.length} deaths and ${kills.length} kills`);
+        return allEvents;
+    } catch (error) {
+        console.error('Failed to fetch alliance events:', error);
         throw error;
     }
 }
@@ -194,5 +271,7 @@ async function testApiConnection() {
 // Expose functions to global scope
 window.setApiRegion = setApiRegion;
 window.fetchAllianceDeaths = fetchAllianceDeaths;
+window.fetchAllianceKills = fetchAllianceKills;
+window.fetchAllianceEvents = fetchAllianceEvents;
 window.testApiConnection = testApiConnection;
 window.getApiStatus = () => apiStatus;

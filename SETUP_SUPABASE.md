@@ -1,6 +1,6 @@
 # Setting Up Supabase for BattleTab
 
-This guide explains how to implement database functionality using Supabase for the Double Overcharge Death Tracker.
+This guide explains how to implement database functionality using Supabase for the Double Overcharge Event Tracker.
 
 ## Why Supabase?
 
@@ -23,11 +23,29 @@ Supabase is a great choice for this application because:
 
 ### 2. Set Up the Database Tables
 
-Execute the following SQL in your Supabase SQL Editor:
+Execute this SQL script in your Supabase SQL Editor:
 
 ```sql
--- Create a table for death events
+-- Create table for tracking deaths of alliance members
 CREATE TABLE deaths (
+  id SERIAL PRIMARY KEY,
+  event_id TEXT UNIQUE NOT NULL,
+  timestamp TIMESTAMPTZ NOT NULL,
+  victim_id TEXT NOT NULL,
+  victim_name TEXT NOT NULL,
+  victim_guild TEXT,
+  victim_alliance_id TEXT NOT NULL,
+  killer_id TEXT NOT NULL,
+  killer_name TEXT NOT NULL,
+  killer_guild TEXT,
+  killer_alliance_id TEXT,
+  fame INTEGER NOT NULL,
+  event_data JSONB NOT NULL,  -- Store the full API response
+  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create table for tracking kills by alliance members
+CREATE TABLE killmails (
   id SERIAL PRIMARY KEY,
   event_id TEXT UNIQUE NOT NULL,
   timestamp TIMESTAMPTZ NOT NULL,
@@ -38,35 +56,60 @@ CREATE TABLE deaths (
   killer_id TEXT NOT NULL,
   killer_name TEXT NOT NULL,
   killer_guild TEXT,
-  killer_alliance_id TEXT,
-  kill_fame INTEGER NOT NULL,
+  killer_alliance_id TEXT NOT NULL,
+  fame INTEGER NOT NULL,
   event_data JSONB NOT NULL,  -- Store the full API response
   created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
--- Create a table for receipt images
+-- Create table for receipt images
 CREATE TABLE receipts (
   id SERIAL PRIMARY KEY,
-  death_event_id TEXT REFERENCES deaths(event_id) ON DELETE CASCADE,
+  event_id TEXT UNIQUE NOT NULL,
   image_url TEXT NOT NULL,
+  event_type TEXT NOT NULL, -- 'death' or 'killmail'
   created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
--- Create indexes for common queries
+-- Create indexes for common queries on deaths
 CREATE INDEX idx_deaths_victim_alliance ON deaths(victim_alliance_id);
 CREATE INDEX idx_deaths_timestamp ON deaths(timestamp DESC);
-CREATE INDEX idx_deaths_victim_id ON deaths(victim_id);
+
+-- Create indexes for common queries on killmails
+CREATE INDEX idx_killmails_killer_alliance ON killmails(killer_alliance_id);
+CREATE INDEX idx_killmails_timestamp ON killmails(timestamp DESC);
+
+-- Create index for receipt lookups
+CREATE INDEX idx_receipts_event_id ON receipts(event_id);
 ```
 
 ### 3. Set Up Storage Bucket
 
-1. In your Supabase dashboard, go to Storage
-2. Create a new bucket called "receipts"
-3. Go to the bucket's policies and add the following permissions:
-   - Allow public read access
-   - Allow authenticated users to upload files
+Storage buckets are created through the Supabase dashboard UI, not SQL:
 
-### 4. Update the Database.js File
+1. In your Supabase dashboard, navigate to "Storage"
+2. Click "Create new bucket"
+3. Enter "receipts" as the bucket name
+4. Check "Public bucket" if you want images to be publicly accessible
+
+### 4. Set Storage Policies
+
+After creating the bucket, set up access policies:
+
+1. Click on the "receipts" bucket
+2. Go to the "Policies" tab
+3. Click "Add Policy"
+4. For anonymous reads:
+   - Policy name: "Public Access" 
+   - Policy definition: `SELECT`
+   - Using expression: `true`
+
+5. For image uploads (create another policy):
+   - Policy name: "Upload Access"
+   - Policy definition: `INSERT`
+   - Using expression: `true` (for development) or `auth.role() = 'authenticated'` (for production)
+
+### 5. Update the Database.js File
 
 Replace the placeholder code in `database.js` with actual Supabase implementation:
 
@@ -175,7 +218,7 @@ window.db = {
 };
 ```
 
-### 5. Uncomment the Supabase Script in index.html
+### 6. Uncomment the Supabase Script in index.html
 
 In your `index.html` file, uncomment the Supabase script tag:
 
@@ -183,7 +226,7 @@ In your `index.html` file, uncomment the Supabase script tag:
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.38.4/dist/umd/supabase.min.js"></script>
 ```
 
-### 6. Update the main.js File to Use the Database
+### 7. Update the main.js File to Use the Database
 
 Modify your `loadAllianceDeaths` function in `main.js` to use the database:
 

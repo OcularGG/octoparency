@@ -6,47 +6,58 @@ const receiptModal = document.getElementById('receipt-modal');
 const receiptContent = document.getElementById('receipt-content');
 const downloadButton = document.getElementById('download-receipt');
 const closeButton = document.querySelector('.close-button');
+const autoRefreshToggle = document.getElementById('auto-refresh-toggle');
 
-let currentDeaths = [];
-let currentDeathIndex = null;
+let currentEvents = [];
+let currentEventIndex = null;
+let autoRefreshInterval = null;
+const AUTO_REFRESH_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 
-function displayDeaths(deaths) {
-    if (!deaths || deaths.length === 0) {
+function displayEvents(events) {
+    if (!events || events.length === 0) {
         deathsList.innerHTML = `
             <div class="empty-state">
-                <p>No recent deaths found for Double Overcharge alliance.</p>
+                <p>No recent events found for Double Overcharge alliance.</p>
                 <p>Try selecting a different server region or check back later.</p>
             </div>
         `;
         return;
     }
 
-    currentDeaths = deaths; // Store the deaths
+    currentEvents = events; // Store the events
     deathsList.innerHTML = ''; // Clear existing list
 
-    deaths.forEach((death, index) => {
-        const deathTime = new Date(death.TimeStamp);
-        const deathItem = document.createElement('div');
-        deathItem.classList.add('death-item');
+    events.forEach((event, index) => {
+        // Determine if this is a kill or death
+        const isKill = event.eventType === 'kill' || 
+                      (event.Killer && event.Killer.AllianceId === 'TH8JjVwVRiuFnalrzESkRQ');
+                      
+        const eventTime = new Date(event.TimeStamp);
+        const eventItem = document.createElement('div');
+        eventItem.classList.add('death-item');
         
-        deathItem.innerHTML = `
-            <h3>${death.Victim.Name}</h3>
+        // Add class for styling based on event type
+        eventItem.classList.add(isKill ? 'kill-event' : 'death-event');
+        
+        eventItem.innerHTML = `
+            <div class="event-tag ${isKill ? 'kill-tag' : 'death-tag'}">${isKill ? 'Killmail' : 'Death'}</div>
+            <h3>${event.Victim.Name}</h3>
             <div class="death-info">
                 <div class="death-detail">
                     <span>Killed by</span>
-                    <span>${death.Killer.Name}</span>
+                    <span>${event.Killer.Name}</span>
                 </div>
                 <div class="death-detail">
                     <span>Date</span>
-                    <span>${deathTime.toLocaleDateString()}</span>
+                    <span>${eventTime.toLocaleDateString()}</span>
                 </div>
                 <div class="death-detail">
                     <span>Time</span>
-                    <span>${deathTime.toLocaleTimeString()}</span>
+                    <span>${eventTime.toLocaleTimeString()}</span>
                 </div>
                 <div class="death-detail">
                     <span>Fame</span>
-                    <span>${death.TotalVictimKillFame.toLocaleString()}</span>
+                    <span>${event.TotalVictimKillFame.toLocaleString()}</span>
                 </div>
             </div>
             <div class="death-actions">
@@ -57,7 +68,7 @@ function displayDeaths(deaths) {
             </div>
         `;
         
-        deathsList.appendChild(deathItem);
+        deathsList.appendChild(eventItem);
     });
     
     // Add event listeners to the view receipt buttons
@@ -70,10 +81,10 @@ function displayDeaths(deaths) {
 }
 
 async function showReceipt(index) {
-    const death = currentDeaths[index];
-    if (!death) return;
+    const event = currentEvents[index];
+    if (!event) return;
     
-    currentDeathIndex = index;
+    currentEventIndex = index;
     
     // Show loading state
     receiptContent.innerHTML = `
@@ -85,7 +96,7 @@ async function showReceipt(index) {
 
     try {
         // Generate receipt
-        const receiptHTML = await generateBattleReceipt(death, 'deaths');
+        const receiptHTML = await generateBattleReceipt(event, 'events');
         receiptContent.innerHTML = receiptHTML;
     } catch (error) {
         console.error('Error generating receipt:', error);
@@ -94,63 +105,68 @@ async function showReceipt(index) {
 }
 
 function downloadReceipt() {
-    if (currentDeathIndex === null) return;
+    if (currentEventIndex === null) return;
     
-    const death = currentDeaths[currentDeathIndex];
-    if (!death) return;
+    const event = currentEvents[currentEventIndex];
+    if (!event) return;
     
     const img = document.querySelector('.receipt-img');
     if (!img) return;
     
     // Create download link
     const link = document.createElement('a');
-    link.download = `death_receipt_${death.Victim.Name.replace(/\s+/g, '_')}_${new Date(death.TimeStamp).toISOString().split('T')[0]}.png`;
+    link.download = `event_receipt_${event.Victim.Name.replace(/\s+/g, '_')}_${new Date(event.TimeStamp).toISOString().split('T')[0]}.png`;
     link.href = img.src;
     link.click();
 }
 
-async function loadAllianceDeaths() {
+async function loadAllianceEvents() {
     deathsList.innerHTML = `
         <div class="loading">
             <div class="loading-spinner"></div>
-            <p>Loading deaths...</p>
+            <p>Loading events...</p>
         </div>
     `;
     
     try {
-        // Try to get cached deaths from the database
-        const { data: cachedDeaths, error: dbError } = await window.db.getDeaths({
-            limit: 200,  // increased limit to pull past deaths
+        // Try to get cached events from the database
+        const { data: cachedEvents, error: dbError } = await window.db.getEvents({
+            limit: 200,
             allianceId: 'TH8JjVwVRiuFnalrzESkRQ'
         });
         
-        if (cachedDeaths && cachedDeaths.length > 0) {
-            console.log(`Displaying ${cachedDeaths.length} cached deaths`);
-            displayDeaths(cachedDeaths);
+        if (cachedEvents && cachedEvents.length > 0) {
+            console.log(`Displaying ${cachedEvents.length} cached events`);
+            displayEvents(cachedEvents);
         }
         
         // Always fetch fresh data from the API with higher limit
-        const apiDeaths = await fetchAllianceDeaths(200);
+        const apiEvents = await fetchAllianceEvents(200);
         
-        if (apiDeaths && apiDeaths.length > 0) {
-            await window.db.saveDeath(apiDeaths);
-            displayDeaths(apiDeaths);
+        if (apiEvents && apiEvents.length > 0) {
+            await window.db.saveEvents(apiEvents);
+            displayEvents(apiEvents);
+            
+            // Update the last refresh timestamp
+            updateLastRefreshTime();
         } else {
-            deathsList.innerHTML = `
-                <div class="empty-state">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <line x1="12" y1="8" x2="12" y2="12"></line>
-                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
-                    </svg>
-                    <h3>No Deaths Found</h3>
-                    <p>No recent deaths found for Double Overcharge alliance.</p>
-                    <p>Try selecting a different server region or check back later.</p>
-                </div>
-            `;
+            if (!cachedEvents || cachedEvents.length === 0) {
+                deathsList.innerHTML = `
+                    <div class="empty-state">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="8" x2="12" y2="12"></line>
+                            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                        </svg>
+                        <h3>No Events Found</h3>
+                        <p>No recent events found for Double Overcharge alliance.</p>
+                        <p>Try selecting a different server region or check back later.</p>
+                    </div>
+                `;
+            }
         }
     } catch (error) {
-        console.error('Error loading deaths:', error);
+        console.error('Error loading events:', error);
         deathsList.innerHTML = `
             <div class="error-state">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -158,7 +174,7 @@ async function loadAllianceDeaths() {
                     <line x1="12" y1="8" x2="12" y2="12"></line>
                     <line x1="12" y1="16" x2="12.01" y2="16"></line>
                 </svg>
-                <h3>Error Loading Deaths</h3>
+                <h3>Error Loading Events</h3>
                 <p>${error.message}</p>
                 <p>Check your internet connection and try again.</p>
                 <button id="retry-button" class="btn">
@@ -171,7 +187,55 @@ async function loadAllianceDeaths() {
                 </button>
             </div>
         `;
-        document.getElementById('retry-button')?.addEventListener('click', loadAllianceDeaths);
+        document.getElementById('retry-button')?.addEventListener('click', loadAllianceEvents);
+    }
+}
+
+/**
+ * Update the last refresh timestamp display
+ */
+function updateLastRefreshTime() {
+    const refreshTimeElement = document.getElementById('last-refresh-time');
+    if (refreshTimeElement) {
+        const now = new Date();
+        const timeString = now.toLocaleTimeString();
+        refreshTimeElement.textContent = timeString;
+    }
+}
+
+/**
+ * Toggle automatic refresh on/off
+ * @param {boolean} enable - Whether to enable auto-refresh
+ */
+function toggleAutoRefresh(enable) {
+    if (enable) {
+        // Clear any existing interval
+        if (autoRefreshInterval) {
+            clearInterval(autoRefreshInterval);
+        }
+        
+        // Set up a new interval
+        autoRefreshInterval = setInterval(loadAllianceEvents, AUTO_REFRESH_INTERVAL_MS);
+        
+        // Update UI
+        autoRefreshToggle.classList.add('active');
+        autoRefreshToggle.title = 'Auto-refresh is ON (every 5 minutes)';
+        
+        // Save preference
+        localStorage.setItem('autoRefreshEnabled', 'true');
+    } else {
+        // Clear the interval
+        if (autoRefreshInterval) {
+            clearInterval(autoRefreshInterval);
+            autoRefreshInterval = null;
+        }
+        
+        // Update UI
+        autoRefreshToggle.classList.remove('active');
+        autoRefreshToggle.title = 'Auto-refresh is OFF';
+        
+        // Save preference
+        localStorage.setItem('autoRefreshEnabled', 'false');
     }
 }
 
@@ -239,8 +303,8 @@ const sampleDeathData = {
 
 // Function to show the test receipt
 function showTestReceipt() {
-    currentDeathIndex = 0;
-    currentDeaths = [sampleDeathData];
+    currentEventIndex = 0;
+    currentEvents = [sampleDeathData];
     
     // Show loading state
     receiptContent.innerHTML = `
@@ -252,7 +316,7 @@ function showTestReceipt() {
 
     try {
         // Generate receipt with sample data
-        generateBattleReceipt(sampleDeathData, 'deaths').then(receiptHTML => {
+        generateBattleReceipt(sampleDeathData, 'events').then(receiptHTML => {
             receiptContent.innerHTML = receiptHTML;
         });
     } catch (error) {
@@ -262,26 +326,32 @@ function showTestReceipt() {
 }
 
 function setupEventListeners() {
-    // Refresh deaths when button is clicked
-    refreshButton.addEventListener('click', loadAllianceDeaths);
+    // Refresh events when button is clicked
+    refreshButton.addEventListener('click', loadAllianceEvents);
     
-    // Change region and refresh deaths
+    // Toggle auto-refresh
+    autoRefreshToggle.addEventListener('click', () => {
+        const currentState = autoRefreshToggle.classList.contains('active');
+        toggleAutoRefresh(!currentState);
+    });
+    
+    // Change region and refresh events
     regionSelect.addEventListener('change', () => {
         setApiRegion(regionSelect.value);
-        loadAllianceDeaths();
+        loadAllianceEvents();
     });
     
     // Close modal
     closeButton.addEventListener('click', () => {
         receiptModal.style.display = 'none';
-        currentDeathIndex = null;
+        currentEventIndex = null;
     });
     
     // Close modal when clicking outside of it
     window.addEventListener('click', (event) => {
         if (event.target === receiptModal) {
             receiptModal.style.display = 'none';
-            currentDeathIndex = null;
+            currentEventIndex = null;
         }
     });
     
@@ -292,7 +362,7 @@ function setupEventListeners() {
     document.addEventListener('keydown', (event) => {
         if (event.key === 'Escape' && receiptModal.style.display === 'flex') {
             receiptModal.style.display = 'none';
-            currentDeathIndex = null;
+            currentEventIndex = null;
         }
     });
     
@@ -302,6 +372,14 @@ function setupEventListeners() {
 
 document.addEventListener('DOMContentLoaded', () => {
     setupEventListeners();
-    checkStylesheets(); // Add this line to check stylesheets
-    loadAllianceDeaths();
+    checkStylesheets();
+    
+    // Load initial data
+    loadAllianceEvents();
+    
+    // Check if auto-refresh was previously enabled
+    const autoRefreshEnabled = localStorage.getItem('autoRefreshEnabled') === 'true';
+    if (autoRefreshEnabled) {
+        toggleAutoRefresh(true);
+    }
 });
