@@ -617,6 +617,26 @@ function getRateLimitStatus() {
     };
 }
 
+// Initialize the rate limit indicator if it exists
+function initializeRateLimitIndicator() {
+    // Dispatch an initial update event
+    document.dispatchEvent(new CustomEvent('apiRateLimitUpdate', { 
+        detail: getRateLimitStatus()
+    }));
+    
+    // Set up periodic updates
+    setInterval(() => {
+        document.dispatchEvent(new CustomEvent('apiRateLimitUpdate', { 
+            detail: getRateLimitStatus()
+        }));
+    }, 5000);
+}
+
+// Call this after the DOM is loaded
+if (typeof document !== 'undefined') {
+    document.addEventListener('DOMContentLoaded', initializeRateLimitIndicator);
+}
+
 // Expose functions to global scope
 window.setApiRegion = setApiRegion;
 window.fetchAllianceDeaths = fetchAllianceDeaths;

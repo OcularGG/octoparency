@@ -229,7 +229,16 @@ function startCooldownTimer(seconds) {
  */
 function showModal(modal) {
     if (!modal) return;
+    
+    // First hide any other visible modals
+    document.querySelectorAll('.api-modal.show').forEach(m => {
+        if (m !== modal) hideModal(m);
+    });
+    
     modal.classList.add('show');
+    
+    // Prevent scrolling of background content
+    document.body.style.overflow = 'hidden';
 }
 
 /**
@@ -239,6 +248,11 @@ function showModal(modal) {
 function hideModal(modal) {
     if (!modal) return;
     modal.classList.remove('show');
+    
+    // Restore scrolling if no other modals are visible
+    if (!document.querySelector('.api-modal.show')) {
+        document.body.style.overflow = '';
+    }
 }
 
 // Apply throttling to API-intensive functions
@@ -537,11 +551,19 @@ function setAuthenticated(auth) {
 function updateAuthUI() {
     const isAuth = isAuthenticated();
     
-    // Always hide login overlay by default - never show it automatically
+    // Always hide login overlay by default
     loginOverlay.style.display = 'none';
     
+    // Show admin login button only when not logged in
+    const adminLoginBtn = document.getElementById('admin-login-btn');
+    if (adminLoginBtn) {
+        adminLoginBtn.style.display = isAuth ? 'none' : 'flex';
+    }
+    
     // Show/hide logout button
-    logoutBtn.style.display = isAuth ? 'block' : 'none';
+    if (logoutBtn) {
+        logoutBtn.style.display = isAuth ? 'flex' : 'none';
+    }
     
     // Show/hide admin buttons
     adminButtons.forEach(btn => {
@@ -564,6 +586,8 @@ function updateAuthUI() {
  */
 function promptLogin() {
     loginOverlay.style.display = 'flex';
+    // Focus on username input for better usability
+    document.getElementById('username')?.focus();
 }
 
 /**
@@ -579,8 +603,10 @@ function handleLogin(e) {
     if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
         setAuthenticated(true);
         loginError.textContent = '';
+        loginOverlay.style.display = 'none';
     } else {
         loginError.textContent = 'Invalid username or password';
+        loginError.style.color = '#ff5555';
         setAuthenticated(false);
     }
 }
@@ -835,6 +861,11 @@ function setupEventListeners() {
                 "Maximum retry attempts reached. Please try again later.";
             showModal(apiErrorModal);
         }
+    });
+    
+    // Admin login button
+    document.getElementById('admin-login-btn')?.addEventListener('click', () => {
+        promptLogin();
     });
 }
 
