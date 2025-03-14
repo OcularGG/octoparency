@@ -5,9 +5,28 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BattleTab - Albion Online Battle Statistics</title>
     <link rel="stylesheet" href="css/style.css">
+    <!-- Add inline script to detect loading issues -->
+    <script>
+        console.log('Page loading started...');
+        window.addEventListener('error', function(e) {
+            document.getElementById('error-message').textContent = 
+                'Error: ' + e.message + ' at ' + e.filename + ':' + e.lineno;
+            document.getElementById('error-container').style.display = 'block';
+        });
+    </script>
 </head>
 <body>
-    <div class="container">
+    <!-- Add diagnostic elements -->
+    <div id="error-container" style="display: none; background: #ff5555; color: white; padding: 20px; margin: 20px; border-radius: 4px;">
+        <h2>An error occurred:</h2>
+        <div id="error-message"></div>
+    </div>
+    
+    <div id="loading-indicator" style="text-align: center; padding: 40px;">
+        Loading BattleTab... If this message persists, there might be an issue with JavaScript or API connectivity.
+    </div>
+
+    <div class="container" style="display: none;">
         <header>
             <h1>BattleTab</h1>
             <p>Albion Online Battle Statistics Tracker</p>
@@ -16,6 +35,15 @@
         <div class="search-container">
             <input type="text" id="player-search" placeholder="Enter player name...">
             <button id="search-button">Search</button>
+        </div>
+
+        <div class="region-selector">
+            <label for="region-select">Select Region:</label>
+            <select id="region-select">
+                <option value="americas">Americas</option>
+                <option value="europe">Europe</option>
+                <option value="asia">Asia</option>
+            </select>
         </div>
 
         <div id="search-results" class="search-results"></div>
@@ -43,11 +71,45 @@
     </div>
 
     <footer>
-        <p>BattleTab v1.0.2 | Data from <a href="https://albiononline.com" target="_blank">Albion Online</a></p>
+        <p>BattleTab v1.1.0 | Data from <a href="https://albiononline.com" target="_blank">Albion Online</a></p>
     </footer>
 
     <script src="js/api.js"></script>
     <script src="js/receipt.js"></script>
     <script src="js/main.js"></script>
+    <script>
+        // Diagnostic script
+        console.log('All scripts loaded');
+        
+        // Show the container after a short delay
+        setTimeout(function() {
+            document.querySelector('.container').style.display = 'block';
+            document.getElementById('loading-indicator').style.display = 'none';
+            
+            // Test API connection
+            if (window.testApiConnection) {
+                window.testApiConnection();
+            } else {
+                console.error('API test function not available');
+            }
+        }, 500);
+
+        // Initialize region selector
+        document.getElementById('region-select').addEventListener('change', function() {
+            const region = this.value;
+            if (window.setApiRegion) {
+                window.setApiRegion(region);
+            } else {
+                console.error('API region setter function not available');
+            }
+        });
+
+        // List available API endpoints
+        if (window.listApiEndpoints) {
+            window.listApiEndpoints();
+        } else {
+            console.error('API endpoints lister function not available');
+        }
+    </script>
 </body>
 </html>

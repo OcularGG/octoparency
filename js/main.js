@@ -10,6 +10,7 @@ const tabButtons = document.querySelectorAll('.tab-button');
 const battleDetailsDiv = document.getElementById('battle-details');
 const backButton = document.getElementById('back-button');
 const battleReceiptDiv = document.getElementById('battle-receipt');
+const regionSelect = document.getElementById('region-select');
 
 // Current player and view state
 let currentPlayerId = null;
@@ -17,6 +18,16 @@ let currentView = 'kills';
 
 // Initialize event listeners
 function initApp() {
+    console.log('Initializing app...');
+    
+    // Make sure DOM elements exist before attaching listeners
+    if (!playerSearchInput || !searchButton) {
+        console.error('Critical DOM elements not found. Check HTML structure.');
+        document.getElementById('error-message').textContent = 'Critical DOM elements not found. Check HTML structure.';
+        document.getElementById('error-container').style.display = 'block';
+        return;
+    }
+
     searchButton.addEventListener('click', handleSearch);
     playerSearchInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') handleSearch();
@@ -34,6 +45,16 @@ function initApp() {
     backButton.addEventListener('click', () => {
         battleDetailsDiv.classList.add('hidden');
         playerDataDiv.classList.remove('hidden');
+    });
+
+    // Initialize region selector
+    regionSelect.addEventListener('change', function() {
+        const region = this.value;
+        if (window.setApiRegion) {
+            window.setApiRegion(region);
+        } else {
+            console.error('API region setter function not available');
+        }
     });
 }
 
@@ -158,4 +179,19 @@ function showBattleDetails(battle, type) {
 }
 
 // Initialize the app when DOM is loaded
-document.addEventListener('DOMContentLoaded', initApp);
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, initializing app...');
+    try {
+        initApp();
+        console.log('App initialization complete');
+    } catch (error) {
+        console.error('Error initializing app:', error);
+        document.getElementById('error-message').textContent = 'Initialization error: ' + error.message;
+        document.getElementById('error-container').style.display = 'block';
+    }
+});
+
+// Add global error handling
+window.addEventListener('unhandledrejection', function(event) {
+    console.error('Unhandled promise rejection:', event.reason);
+});

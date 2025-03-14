@@ -1,13 +1,40 @@
-const API_BASE_URL = 'https://gameinfo.albiononline.com/api/gameinfo';
-const CORS_PROXY = ''; // If needed, add a CORS proxy URL here
+const API_BASE_URLS = {
+    americas: 'https://gameinfo.albiononline.com/api/gameinfo',
+    europe: 'https://gameinfo-ams.albiononline.com/api/gameinfo',
+    asia: 'https://gameinfo-sgp.albiononline.com/api/gameinfo'
+};
+
+// Default to Americas server
+let selectedRegion = 'americas';
+
+// Using a public CORS proxy to avoid CORS issues
+const CORS_PROXY = 'https://corsproxy.io/?';
+
+// Debug flag to help troubleshoot issues
+const DEBUG = true;
 
 /**
- * Get API URL with optional CORS proxy
+ * Set the API region
+ * @param {string} region - The region to set ('americas', 'europe', 'asia')
+ */
+function setApiRegion(region) {
+    if (API_BASE_URLS[region]) {
+        selectedRegion = region;
+        if (DEBUG) console.log('API region set to:', region);
+    } else {
+        console.error('Invalid region specified:', region);
+    }
+}
+
+/**
+ * Get API URL with CORS proxy
  * @param {string} endpoint - The API endpoint
  * @returns {string} - The complete URL
  */
 function getApiUrl(endpoint) {
-    return `${CORS_PROXY}${API_BASE_URL}${endpoint}`;
+    const url = `${CORS_PROXY}${API_BASE_URLS[selectedRegion]}${endpoint}`;
+    if (DEBUG) console.log('API Request URL:', url);
+    return url;
 }
 
 /**
@@ -100,3 +127,64 @@ async function getItemData(itemId) {
         return null;
     }
 }
+
+/**
+ * List all available API endpoints
+ */
+function listApiEndpoints() {
+    const endpoints = [
+        '/search?q=<search_term>',
+        '/players/<ID>',
+        '/players/<ID>/deaths',
+        '/players/<ID>/kills',
+        '/players/statistics',
+        '/guilds/<ID>',
+        '/guilds/<ID>/members',
+        '/guilds/<ID>/data',
+        '/guilds/<ID>/top',
+        '/alliances/<ID>',
+        '/battles',
+        '/battles/<ID>',
+        '/battle/<ID>',
+        '/items/<ID>',
+        '/items/<ID>/data',
+        '/items/<ID>/_itemCategoryTree',
+        '/matches/crystal',
+        '/matches/crystal/<ID>',
+        '/guildmatches/top',
+        '/guildmatches/next',
+        '/guildmatches/past',
+        '/guildmatches/<ID>',
+        '/events/playerfame',
+        '/events/guildfame',
+        '/guilds/topguildsbyattacks',
+        '/guilds/topguildsbydefenses',
+        '/events/playerweaponfame',
+        '/items/_weaponCategories',
+        '/events/killfame',
+        '/events',
+        '/events/<ID>'
+    ];
+    console.log('Available API endpoints:', endpoints);
+}
+
+// Add this function for debugging
+function testApiConnection() {
+    console.log('Testing API connection...');
+    fetch(getApiUrl('/players/WyzzQOOW5RebNTyrZG7mJQ'))
+        .then(response => {
+            console.log('API test response status:', response.status);
+            return response.json();
+        })
+        .then(data => {
+            console.log('API test data:', data);
+        })
+        .catch(error => {
+            console.error('API test error:', error);
+        });
+}
+
+// Export the test function and region setter for use in main.js
+window.testApiConnection = testApiConnection;
+window.setApiRegion = setApiRegion;
+window.listApiEndpoints = listApiEndpoints;
