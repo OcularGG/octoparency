@@ -461,3 +461,20 @@ button:focus-visible, .btn:focus-visible, select:focus-visible {
     padding: 1rem;
   }
 }
+
+/* Add styling for the test button */
+.test-btn {
+  background-color: #4a4a4a;
+  border: 1px solid #555;
+}
+
+.test-btn:hover {
+  background-color: #5a5a5a;
+}
+
+/* Adjust the controls for the new button */
+@media (max-width: 768px) {
+  .controls {
+    grid-template-columns: 1fr;
+  }
+}

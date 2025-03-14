@@ -204,6 +204,63 @@ function checkStylesheets() {
     }
 }
 
+// Sample death data for testing receipt generation
+const sampleDeathData = {
+    EventId: "test-event-12345",
+    TimeStamp: new Date().toISOString(),
+    TotalVictimKillFame: 125000,
+    Victim: {
+        Name: "TestVictim",
+        GuildName: "Double Overcharge",
+        AllianceName: "Double Overcharge",
+        AverageItemPower: 1250,
+        Equipment: {
+            MainHand: { Type: "T8_MAIN_ARCANESTAFF", Quality: 5 },
+            OffHand: { Type: "T7_OFF_BOOK", Quality: 4 },
+            Head: { Type: "T8_HEAD_CLOTH_SET3", Quality: 3 },
+            Armor: { Type: "T8_ARMOR_CLOTH_SET3", Quality: 4 },
+            Shoes: { Type: "T7_SHOES_CLOTH_SET3", Quality: 3 },
+            Cape: { Type: "T6_CAPEITEM_FW_MARTLOCK", Quality: 4 },
+            Mount: { Type: "T8_MOUNT_ARMORED_HORSE", Quality: 1 }
+        }
+    },
+    Killer: {
+        Name: "TestKiller",
+        GuildName: "Enemy Guild",
+        AllianceName: "Enemy Alliance"
+    },
+    Participants: [
+        { Name: "TestKiller", DamageDone: 1200 },
+        { Name: "Assist1", DamageDone: 800 },
+        { Name: "Assist2", DamageDone: 500 },
+        { Name: "Assist3", DamageDone: 300 }
+    ]
+};
+
+// Function to show the test receipt
+function showTestReceipt() {
+    currentDeathIndex = 0;
+    currentDeaths = [sampleDeathData];
+    
+    // Show loading state
+    receiptContent.innerHTML = `
+        <div class="loading">
+            <div class="loading-spinner"></div>
+        </div>
+    `;
+    receiptModal.style.display = 'flex'; // Show the modal
+
+    try {
+        // Generate receipt with sample data
+        generateBattleReceipt(sampleDeathData, 'deaths').then(receiptHTML => {
+            receiptContent.innerHTML = receiptHTML;
+        });
+    } catch (error) {
+        console.error('Error generating test receipt:', error);
+        receiptContent.innerHTML = `<p>Error generating receipt. Please try again.</p>`;
+    }
+}
+
 function setupEventListeners() {
     // Refresh deaths when button is clicked
     refreshButton.addEventListener('click', loadAllianceDeaths);
@@ -238,6 +295,9 @@ function setupEventListeners() {
             currentDeathIndex = null;
         }
     });
+    
+    // Test receipt button
+    document.getElementById('test-receipt').addEventListener('click', showTestReceipt);
 }
 
 document.addEventListener('DOMContentLoaded', () => {
