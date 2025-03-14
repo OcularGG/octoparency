@@ -14,6 +14,22 @@ const errorLogContainer = document.getElementById('error-log');
 const clearErrorLogBtn = document.getElementById('clear-error-log');
 const exportErrorLogBtn = document.getElementById('export-error-log');
 
+// Add these variables for API safeguards
+let rateLimitIndicator = document.getElementById('rate-limit-indicator');
+let rateLimitProgress = document.getElementById('rate-limit-progress');
+let rateLimitText = document.getElementById('rate-limit-text');
+let rateLimitWarningModal = document.getElementById('rate-limit-warning-modal');
+let rateLimitExceededModal = document.getElementById('rate-limit-exceeded-modal');
+let apiErrorModal = document.getElementById('api-error-modal');
+let cooldownTimer = document.getElementById('cooldown-timer');
+let cooldownProgress = document.getElementById('cooldown-progress');
+let warningCurrent = document.getElementById('warning-current');
+let warningMax = document.getElementById('warning-max');
+let apiErrorMessage = document.getElementById('api-error-message');
+let apiErrorDetails = document.getElementById('api-error-details');
+let apiRetryMessage = document.getElementById('api-retry-message');
+let apiErrorRetry = document.getElementById('api-error-retry');
+
 let currentEvents = [];
 let currentEventIndex = null;
 let autoRefreshInterval = null;
@@ -126,7 +142,122 @@ function downloadReceipt() {
     link.click();
 }
 
+// Add button debounce protection
+function debounce(func, wait) {
+    let timeout;
+    return function(...args) {
+        const context = this;
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(context, args), wait);
+    };
+}
+
+// Add throttle function to prevent rapid succession calls
+function throttle(func, limit) {
+    let inThrottle;
+    return function(...args) {
+        const context = this;
+        if (!inThrottle) {
+            func.apply(context, args);
+            inThrottle = true;
+            setTimeout(() => inThrottle = false, limit);
+        }
+    };
+}
+
+/**
+ * Update the API rate limit indicator
+ */
+function updateRateLimitIndicator() {
+    if (!rateLimitIndicator) return;
+    
+    const status = window.getRateLimitStatus();
+    
+    // Update the progress bar
+    rateLimitProgress.style.width = `${status.percentage}%`;
+    
+    // Update the text
+    rateLimitText.textContent = `${status.current}/${status.max}`;
+    
+    // Update color based on usage
+    if (status.percentage > 90) {
+        rateLimitProgress.className = 'rate-limit-progress danger';
+    } else if (status.percentage > 70) {
+        rateLimitProgress.className = 'rate-limit-progress warning';
+    } else {
+        rateLimitProgress.className = 'rate-limit-progress';
+    }
+    
+    // Show/hide based on usage
+    if (status.current > 0 || status.inCooldown) {
+        rateLimitIndicator.style.display = 'flex';
+    } else {
+        rateLimitIndicator.style.display = 'none';
+    }
+}
+
+/**
+ * Start cooldown timer animation
+ * @param {number} seconds - Cooldown duration in seconds
+ */
+function startCooldownTimer(seconds) {
+    if (!cooldownTimer) return;
+    
+    let timeLeft = seconds;
+    cooldownTimer.textContent = timeLeft;
+    cooldownProgress.style.width = '0%';
+    
+    // Update every second
+    const timerInterval = setInterval(() => {
+        timeLeft--;
+        if (timeLeft <= 0) {
+            clearInterval(timerInterval);
+            hideModal(rateLimitExceededModal);
+            // Force refresh data after cooldown
+            setTimeout(() => loadAllianceEvents(), 500);
+        } else {
+            cooldownTimer.textContent = timeLeft;
+            const progressPercentage = ((seconds - timeLeft) / seconds) * 100;
+            cooldownProgress.style.width = `${progressPercentage}%`;
+        }
+    }, 1000);
+}
+
+/**
+ * Show a modal
+ * @param {Element} modal - The modal element
+ */
+function showModal(modal) {
+    if (!modal) return;
+    modal.classList.add('show');
+}
+
+/**
+ * Hide a modal
+ * @param {Element} modal - The modal element
+ */
+function hideModal(modal) {
+    if (!modal) return;
+    modal.classList.remove('show');
+}
+
+// Apply throttling to API-intensive functions
+const loadAllianceEventsThrottled = throttle(loadAllianceEvents, 2000); // 2 second minimum between refreshes
+
+// Apply debounce to UI-triggered refreshes
+const manualRefresh = debounce(() => {
+    loadAllianceEvents();
+}, 500);
+
+// Enhanced loadAllianceEvents with better error handling
 async function loadAllianceEvents() {
+    // Don't attempt if in cooldown
+    const rateLimitStatus = window.getRateLimitStatus();
+    if (rateLimitStatus.inCooldown) {
+        console.log('Skipping refresh due to API cooldown');
+        return;
+    }
+    
     deathsList.innerHTML = `
         <div class="loading">
             <div class="loading-spinner"></div>
@@ -171,8 +302,14 @@ async function loadAllianceEvents() {
                 `;
             }
         }
+        
+        // Update API status after successful fetch
+        updateApiStatus();
+        updateRateLimitIndicator();
     } catch (error) {
         console.error('Error loading events:', error);
+        
+        // Show error state in the UI
         deathsList.innerHTML = `
             <div class="error-state">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -194,6 +331,11 @@ async function loadAllianceEvents() {
             </div>
         `;
         document.getElementById('retry-button')?.addEventListener('click', loadAllianceEvents);
+        
+        // Show API error modal
+        apiErrorMessage.textContent = `Error loading events: ${error.message}`;
+        apiErrorDetails.textContent = error.stack ? error.stack.split('\n')[0] : '';
+        showModal(apiErrorModal);
     }
 }
 
@@ -333,7 +475,23 @@ function showTestReceipt() {
 
 function updateApiStatus() {
     const status = window.getApiStatus();
-    apiStatusMessage.textContent = `${status.message} (Proxy: ${status.proxy})`;
+    let statusText = status.message;
+    
+    // Update to show direct connection info instead of proxy
+    if (status.direct) {
+        statusText = `${status.message} (Direct API)`;
+    }
+    
+    apiStatusMessage.textContent = statusText;
+    
+    // Add color coding based on status
+    if (status.isWorking) {
+        apiStatusMessage.classList.add('status-ok');
+        apiStatusMessage.classList.remove('status-error');
+    } else {
+        apiStatusMessage.classList.add('status-error');
+        apiStatusMessage.classList.remove('status-ok');
+    }
 }
 
 // Authentication variables
@@ -379,8 +537,8 @@ function setAuthenticated(auth) {
 function updateAuthUI() {
     const isAuth = isAuthenticated();
     
-    // Show/hide login overlayy by default - only when accessing admin features
-    loginOverlay.style.display = isAuth ? 'none' : 'flex';
+    // Always hide login overlay by default - never show it automatically
+    loginOverlay.style.display = 'none';
     
     // Show/hide logout button
     logoutBtn.style.display = isAuth ? 'block' : 'none';
@@ -402,36 +560,19 @@ function updateAuthUI() {
 }
 
 /**
- * Handle login form submissionmpting to use admin features
+ * Show login overlay when attempting to use admin features
+ */
+function promptLogin() {
+    loginOverlay.style.display = 'flex';
+}
+
+/**
+ * Handle login form submission
  * @param {Event} e - Form submit event
- */ction promptLogin() {
-function handleLogin(e) {splay = 'flex';
+ */
+function handleLogin(e) {
     e.preventDefault();
     
-    const username = document.getElementById('username').value;
-    const password = document.getElementById('password').value;
-    // Admin buttons that should trigger login when clicked if not authenticated
-    if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
-        setAuthenticated(true);ler = btn.onclick;
-        loginError.textContent = '';
-    } else {if (!isAuthenticated()) {
-        loginError.textContent = 'Invalid username or password';
-        setAuthenticated(false);
-    }           return false;
-}           } else if (originalClickHandler) {
-                return originalClickHandler(e);
-/**         }
- * Handle logout button click
- */ });
-function handleLogout() {
-    setAuthenticated(false);
-}**
- * Handle login form submission
-/**@param {Event} e - Form submit event
- * Format and display the API error log
- * @param {Array} log - Error log entries
- */ e.preventDefault();
-function displayErrorLog(log) {
     const username = document.getElementById('username').value;
     const password = document.getElementById('password').value;
     
@@ -526,42 +667,58 @@ function displayErrorLog(log) {
  */
 function clearErrorLog() {
     window.clearApiErrorLog();
-    }, 100);rrorLog([]);
+    displayErrorLog([]);
+}
+
+/**
+ * Export the error log as a JSON file
+ */
+function exportErrorLog() {
+    const log = window.getApiErrorLog();
+    const blob = new Blob([JSON.stringify(log, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `battletab-error-log-${new Date().toISOString().split('T')[0]}.json`;
+    link.click();
+    setTimeout(() => {
+        URL.revokeObjectURL(url);
+    }, 100);
 }
 
 // Update setupEventListeners function to include the login cancel button
-function setupEventListeners() {le
+function setupEventListeners() {
     // Refresh events when button is clicked
-    refreshButton.addEventListener('click', loadAllianceEvents);tion exportErrorLog() {
-    ApiErrorLog();
+    refreshButton.addEventListener('click', loadAllianceEvents);
+    
     // Toggle auto-refresh
     autoRefreshToggle.addEventListener('click', () => {
         const currentState = autoRefreshToggle.classList.contains('active');
         toggleAutoRefresh(!currentState);
     });
-     null, 2);
-    // Change region and refresh eventscation/json' });
-    regionSelect.addEventListener('change', () => {;
+    
+    // Change region and refresh events
+    regionSelect.addEventListener('change', () => {
         setApiRegion(regionSelect.value);
-        loadAllianceEvents();st link = document.createElement('a');
-    });link.href = url;
-    = `battletab-error-log-${new Date().toISOString().split('T')[0]}.json`;
+        loadAllianceEvents();
+    });
+    
     // Close modal
     closeButton.addEventListener('click', () => {
         receiptModal.style.display = 'none';
-        currentEventIndex = null; URL.revokeObjectURL(url);
-    });}, 100);
+        currentEventIndex = null;
+    });
     
     // Close modal when clicking outside of it
     window.addEventListener('click', (event) => {
         if (event.target === receiptModal) {
-            receiptModal.style.display = 'none';lick', loadAllianceEvents);
+            receiptModal.style.display = 'none';
             currentEventIndex = null;
-        }Toggle auto-refresh
-    });autoRefreshToggle.addEventListener('click', () => {
-    ate = autoRefreshToggle.classList.contains('active');
+        }
+    });
+    
     // Download receipt
-    downloadButton.addEventListener('click', downloadReceipt);});
+    downloadButton.addEventListener('click', downloadReceipt);
     
     // Key press handlers
     document.addEventListener('keydown', (event) => {
@@ -569,97 +726,156 @@ function setupEventListeners() {le
             receiptModal.style.display = 'none';
             currentEventIndex = null;
         }
-    });// Close modal
-    stener('click', () => {
+    });
+    
     // Test receipt button
-    document.getElementById('test-receipt').addEventListener('click', showTestReceipt);    currentEventIndex = null;
+    document.getElementById('test-receipt').addEventListener('click', showTestReceipt);
     
     // Test API button
-    document.getElementById('test-api').addEventListener('click', async () => {
-        console.log('Test API button clicked'); // Add this line
-        const result = await window.testApiConnection();== receiptModal) {
-        updateApiStatus();y = 'none';
-        alert(result.status.message);     currentEventIndex = null;
-    });    }
+    document.getElementById('test-api')?.addEventListener('click', async () => {
+        console.log('Testing direct API connection...');
+        const result = await window.testApiConnection();
+        updateApiStatus();
+        
+        // Show more details about the API test result
+        let message = `API Test Result: ${result.success ? 'Success' : 'Failed'}`;
+        if (result.data && result.data.Name) {
+            message += `\nAlliance Name: ${result.data.Name}`;
+        }
+        if (result.duration) {
+            message += `\nResponse Time: ${result.duration}ms`;
+        }
+        if (result.error) {
+            message += `\nError: ${result.error}`;
+        }
+        
+        alert(message);
+    });
     
     // Authentication event listeners
     loginForm.addEventListener('submit', handleLogin);
-    logoutBtn.addEventListener('click', handleLogout);downloadButton.addEventListener('click', downloadReceipt);
+    logoutBtn.addEventListener('click', handleLogout);
     
     // Error log buttons
     clearErrorLogBtn?.addEventListener('click', clearErrorLog);
-    exportErrorLogBtn?.addEventListener('click', exportErrorLog);    if (event.key === 'Escape' && receiptModal.style.display === 'flex') {
-    lay = 'none';
+    exportErrorLogBtn?.addEventListener('click', exportErrorLog);
+    
     // Listen for error log updates
     document.addEventListener('apiErrorLogUpdated', (event) => {
         if (isAuthenticated()) {
             displayErrorLog(event.detail.log);
-        }Test receipt button
-    });   document.getElementById('test-receipt').addEventListener('click', showTestReceipt);
+        }
+    });
     
     // Cancel login button
-    document.getElementById('login-cancel')?.addEventListener('click', () => {d('test-api').addEventListener('click', async () => {
-        loginOverlay.style.display = 'none';st API button clicked'); // Add this line
-    });    const result = await window.testApiConnection();
+    document.getElementById('login-cancel')?.addEventListener('click', () => {
+        loginOverlay.style.display = 'none';
+    });
     
-    // Close login on escape keyt.status.message);
-    document.addEventListener('keydown', (event) => {});
+    // Close login on escape key
+    document.addEventListener('keydown', (event) => {
         if (event.key === 'Escape') {
-            if (receiptModal.style.display === 'flex') {nt listeners
-                receiptModal.style.display = 'none';loginForm.addEventListener('submit', handleLogin);
-                currentEventIndex = null;ick', handleLogout);
+            if (receiptModal.style.display === 'flex') {
+                receiptModal.style.display = 'none';
+                currentEventIndex = null;
             }
-            if (loginOverlay.style.display === 'flex') {// Error log buttons
-                loginOverlay.style.display = 'none';arErrorLog);
+            if (loginOverlay.style.display === 'flex') {
+                loginOverlay.style.display = 'none';
             }
         }
-    });tes
-}ocument.addEventListener('apiErrorLogUpdated', (event) => {
-    if (isAuthenticated()) {
+    });
+
+    // API Rate Limit Warning modal handlers
+    document.querySelectorAll('.close-modal, .close-modal-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const modal = e.target.closest('.api-modal');
+            if (modal) hideModal(modal);
+        });
+    });
+    
+    // API error retry button
+    apiErrorRetry?.addEventListener('click', () => {
+        hideModal(apiErrorModal);
+        setTimeout(() => loadAllianceEvents(), 500);
+    });
+    
+    // Listen for API rate limit events
+    document.addEventListener('apiRateLimitWarning', (event) => {
+        const { current, max, percentage } = event.detail;
+        warningCurrent.textContent = current;
+        warningMax.textContent = max;
+        showModal(rateLimitWarningModal);
+    });
+    
+    document.addEventListener('apiRateLimitExceeded', (event) => {
+        const { cooldownTime, cooldownUntil } = event.detail;
+        cooldownTimer.textContent = cooldownTime;
+        showModal(rateLimitExceededModal);
+        startCooldownTimer(cooldownTime);
+    });
+    
+    document.addEventListener('apiRateLimitUpdate', (event) => {
+        updateRateLimitIndicator();
+    });
+    
+    document.addEventListener('apiCooldownEnded', () => {
+        updateRateLimitIndicator();
+    });
+    
+    document.addEventListener('apiRequestError', (event) => {
+        const { endpoint, attempt, maxAttempts, error, willRetry } = event.detail;
+        console.log(`API error (${attempt}/${maxAttempts}):`, error);
+        
+        // Only show the error modal on final attempt
+        if (!willRetry) {
+            apiErrorMessage.textContent = `Error accessing API: ${error}`;
+            apiErrorDetails.textContent = `Endpoint: ${endpoint}`;
+            apiRetryMessage.textContent = willRetry ? 
+                "The system will automatically retry shortly." : 
+                "Maximum retry attempts reached. Please try again later.";
+            showModal(apiErrorModal);
+        }
+    });
+}
+
+// Update setupAdminFeatures to properly handle admin features
+function setupAdminFeatures() {
+    // Admin buttons that should trigger login when clicked if not authenticated
+    document.querySelectorAll('.admin-btn').forEach(btn => {
+        const originalOnClick = btn.onclick;
+        btn.onclick = function(e) {
+            if (!isAuthenticated()) {
+                e.preventDefault();
+                e.stopPropagation();
+                promptLogin();
+                return false;
+            } else if (originalOnClick) {
+                return originalOnClick.call(this, e);
+            }
+        };
+    });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     setupEventListeners();
+    setupAdminFeatures(); // Make sure this is called to set up admin access
     checkStylesheets();
     
     // Check authentication status
     updateAuthUI();
     
-    // Load initial datas line to set up admin feature access control
+    // Load initial data
     loadAllianceEvents();
     
     // Test API connection on load
     window.testApiConnection().then(() => updateApiStatus());
     
-    // Check if auto-refresh was previously enabledlways work regardless of auth status
+    // Check if auto-refresh was previously enabled
     const autoRefreshEnabled = localStorage.getItem('autoRefreshEnabled') === 'true';
     if (autoRefreshEnabled && isAuthenticated()) {
         toggleAutoRefresh(true);
-    }dateApiStatus());
-    
-    // Initialize error log display if logged in
-    if (isAuthenticated()) {etItem('autoRefreshEnabled') === 'true';
-        displayErrorLog(window.getApiErrorLog());f (autoRefreshEnabled && isAuthenticated()) {
-    }     toggleAutoRefresh(true);
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-});    }        document.body.appendChild(indicator);        indicator.textContent = 'PREVIEW ENVIRONMENT';        indicator.style.zIndex = '9999';        indicator.style.fontWeight = 'bold';        indicator.style.fontSize = '12px';        indicator.style.borderRadius = '4px';        indicator.style.padding = '5px 10px';        indicator.style.color = 'white';        indicator.style.backgroundColor = '#ff6b00';        indicator.style.left = '10px';        indicator.style.bottom = '10px';        indicator.style.position = 'fixed';        const indicator = document.createElement('div');    if (environment === 'preview') {    const { environment } = getEnvironmentConfig();    // Add environment indicator for preview environments    
+    
     // Initialize error log display if logged in
     if (isAuthenticated()) {
         displayErrorLog(window.getApiErrorLog());

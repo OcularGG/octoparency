@@ -138,8 +138,22 @@ header p {
 
 .refresh-info::before, .api-status::before {
   content: ">";
-  color: var(--terminal-green);
+  color: var (--terminal-green);
   margin-right: 0.5rem;
+}
+
+/* Add styles for API status indicators */
+#api-status-message {
+  color: var(--terminal-green);
+  transition: color 0.3s ease;
+}
+
+#api-status-message.status-ok {
+  color: var(--terminal-green);
+}
+
+#api-status-message.status-error {
+  color: #ff5555;
 }
 
 /* Controls section with terminal-style appearance */
@@ -345,6 +359,7 @@ select {
   color: var(--white);
   font-family: var(--monospace);
   padding: 2rem;
+  transition: opacity 0.5s ease;
 }
 
 .terminal-window {
@@ -356,6 +371,7 @@ select {
   padding: 1rem;
   overflow-y: auto;
   position: relative;
+  box-shadow: 0 0 30px rgba(0, 255, 65, 0.1);
 }
 
 .terminal-header {
@@ -431,13 +447,7 @@ select {
   height: 100%;
   width: 0%;
   background-color: var(--terminal-green);
-  transition: width 0.3s ease;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
+  transition: width 0.5s ease;
 }
 
 /* Footer with terminal look */
@@ -812,4 +822,185 @@ footer {
   padding: 2rem;
   color: var(--light-gray);
   font-style: italic;
+}
+
+/* API Rate Limit Indicator */
+.rate-limit-indicator {
+  position: fixed;
+  bottom: 10px;
+  right: 10px;
+  background-color: var(--dark-gray);
+  border: 1px solid var(--light-gray);
+  border-radius: 4px;
+  padding: 5px 10px;
+  z-index: 900;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  width: 120px;
+  font-family: var(--monospace);
+  font-size: 10px;
+}
+
+.rate-limit-bar {
+  width: 100%;
+  height: 6px;
+  background-color: var(--black);
+  border: 1px solid var(--light-gray);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.rate-limit-progress {
+  height: 100%;
+  width: 0%;
+  background-color: var(--terminal-green);
+  transition: width 0.3s ease, background-color 0.3s ease;
+}
+
+.rate-limit-progress.warning {
+  background-color: #ffaa00;
+}
+
+.rate-limit-progress.danger {
+  background-color: #ff5555;
+}
+
+.rate-limit-text {
+  text-align: center;
+  color: var(--light-gray);
+  font-size: 9px;
+}
+
+/* API Warning Modals */
+.api-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  z-index: 1000;
+  display: none;
+  justify-content: center;
+  align-items: center;
+}
+
+.api-modal.show {
+  display: flex;
+}
+
+.api-modal-content {
+  background-color: var(--dark-gray);
+  border: 2px solid var(--light-gray);
+  width: 90%;
+  max-width: 500px;
+  padding: 2rem;
+  position: relative;
+  text-align: center;
+  color: var(--white);
+  font-family: var(--monospace);
+}
+
+.api-modal-content.warning {
+  border-color: #ffaa00;
+}
+
+.api-modal-content.error {
+  border-color: #ff5555;
+}
+
+.api-modal-content h3 {
+  margin-bottom: 1.5rem;
+  font-size: 1.5rem;
+}
+
+.api-modal-content p {
+  margin-bottom: 1rem;
+}
+
+.api-modal-content .limit-details {
+  font-size: 1.1rem;
+  font-weight: bold;
+  margin: 1rem 0;
+}
+
+.api-modal-content .error-details {
+  font-family: monospace;
+  background-color: var(--black);
+  padding: 0.5rem;
+  margin: 0.5rem 0;
+  text-align: left;
+  color: #ff5555;
+  font-size: 0.9rem;
+  max-height: 100px;
+  overflow-y: auto;
+}
+
+.close-modal {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: var(--light-gray);
+}
+
+.modal-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.modal-actions {
+  margin-top: 1.5rem;
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.btn-primary {
+  background-color: var(--terminal-green);
+  color: var(--black);
+  border-color: var(--terminal-green);
+}
+
+.btn-primary:hover {
+  background-color: var(--white);
+  border-color: var(--white);
+  color: var(--black);
+}
+
+.btn-secondary {
+  background-color: transparent;
+  color: var(--light-gray);
+  border-color: var(--light-gray);
+}
+
+.btn-secondary:hover {
+  color: var(--white);
+  border-color: var(--white);
+}
+
+.retry-message {
+  font-style: italic;
+  color: var(--light-gray);
+  font-size: 0.9rem;
+}
+
+/* Cooldown progress bar */
+.progress-container {
+  width: 100%;
+  height: 10px;
+  background-color: var(--black);
+  border: 1px solid var(--light-gray);
+  border-radius: 5px;
+  overflow: hidden;
+  margin: 1rem 0;
+}
+
+.cooldown-progress {
+  height: 100%;
+  width: 0%;
+  background-color: var(--terminal-green);
+  transition: width 1s linear;
 }

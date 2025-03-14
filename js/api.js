@@ -1,6 +1,6 @@
 /**
  * API connection and data fetching
- * Handles communication with Albion Online API via CORS proxy
+ * Handles direct communication with Albion Online API
  */
 
 // API configuration
@@ -10,17 +10,6 @@ const API_BASE_URLS = {
     asia: 'https://gameinfo-sgp.albiononline.com/api/gameinfo'
 };
 
-// We will try multiple CORS proxies if the primary one fails
-// Updated with more reliable proxies and proper configuration
-const CORS_PROXIES = [
-    'https://corsproxy.io/?',
-    'https://proxy.cors.sh/',
-    'https://cors.eu.org/',
-    'https://api.allorigins.win/raw?url=',
-    'https://crossorigin.me/'
-];
-
-let currentProxyIndex = 0;
 const DOUBLE_OVERCHARGE_ID = 'TH8JjVwVRiuFnalrzESkRQ'; // Alliance ID
 let selectedRegion = 'americas';
 
@@ -29,14 +18,16 @@ const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes in milliseconds
 const API_CACHE_KEY = 'battletab_api_cache';
 const apiCache = loadCacheFromStorage();
 
-// Rate limiting configuration
+// Enhanced rate limiting configuration
 const RATE_LIMIT = {
     maxRequests: 10,        // Maximum requests in time window
     timeWindow: 60 * 1000,  // 1 minute window
     requests: [],           // Array to track request timestamps
     cooldown: false,        // Flag to indicate if we're in cooldown
     cooldownTime: 2 * 60 * 1000, // 2 minutes cooldown if rate limit hit
-    cooldownUntil: null     // Timestamp when cooldown ends
+    cooldownUntil: null,    // Timestamp when cooldown ends
+    warningThreshold: 0.7,  // Warn when 70% of rate limit is reached
+    lastWarningTime: 0      // Track when we last warned the user
 };
 
 // Store the result of connectivity tests
@@ -44,7 +35,7 @@ let apiStatus = {
     lastChecked: null,
     isWorking: false,
     message: 'API status unknown',
-    proxy: CORS_PROXIES[0]
+    direct: true // Now using direct API access
 };
 
 // Create error logging system
@@ -85,10 +76,11 @@ function saveCacheToStorage() {
 }
 
 /**
- * Check if a request would exceed rate limits
+ * Check if a request would exceed rate limits and trigger warnings if needed
+ * @param {boolean} silent - If true, don't trigger UI warnings
  * @returns {boolean} - True if request is allowed, false if rate limited
  */
-function checkRateLimit() {
+function checkRateLimit(silent = false) {
     const now = Date.now();
     
     // Check if we're in cooldown
@@ -96,16 +88,34 @@ function checkRateLimit() {
         if (now < RATE_LIMIT.cooldownUntil) {
             const waitTime = Math.ceil((RATE_LIMIT.cooldownUntil - now) / 1000);
             console.warn(`Rate limit cooldown in effect. Please wait ${waitTime} seconds.`);
+            
+            if (!silent) {
+                // Dispatch an event for the UI to show a rate limit cooldown modal
+                const cooldownEvent = new CustomEvent('apiRateLimitCooldown', { 
+                    detail: { 
+                        waitTime,
+                        cooldownUntil: RATE_LIMIT.cooldownUntil
+                    }
+                });
+                document.dispatchEvent(cooldownEvent);
+            }
+            
             logApiError({
                 errorType: 'rate_limit_cooldown',
                 errorMessage: `In cooldown period, please wait ${waitTime} seconds`,
                 timestamp: new Date().toISOString()
             });
+            
             return false;
         } else {
             // Cooldown period is over
             RATE_LIMIT.cooldown = false;
             RATE_LIMIT.requests = [];
+            
+            if (!silent) {
+                // Notify the UI that cooldown is over
+                document.dispatchEvent(new CustomEvent('apiCooldownEnded'));
+            }
         }
     }
     
@@ -120,17 +130,61 @@ function checkRateLimit() {
         RATE_LIMIT.cooldown = true;
         RATE_LIMIT.cooldownUntil = now + RATE_LIMIT.cooldownTime;
         
+        if (!silent) {
+            // Dispatch an event for the UI to show a rate limit exceeded modal
+            const limitExceededEvent = new CustomEvent('apiRateLimitExceeded', { 
+                detail: { 
+                    cooldownTime: RATE_LIMIT.cooldownTime / 1000,
+                    cooldownUntil: RATE_LIMIT.cooldownUntil
+                }
+            });
+            document.dispatchEvent(limitExceededEvent);
+        }
+        
         logApiError({
             errorType: 'rate_limit_exceeded',
             errorMessage: `Exceeded ${RATE_LIMIT.maxRequests} requests in ${RATE_LIMIT.timeWindow/1000}s window`,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
+            cooldownUntil: RATE_LIMIT.cooldownUntil
         });
         
         return false;
     }
     
+    // Check if we're approaching the limit (warning threshold)
+    const usagePercentage = RATE_LIMIT.requests.length / RATE_LIMIT.maxRequests;
+    if (!silent && usagePercentage >= RATE_LIMIT.warningThreshold && now - RATE_LIMIT.lastWarningTime > 10000) {
+        // Only warn every 10 seconds at most
+        RATE_LIMIT.lastWarningTime = now;
+        
+        // Dispatch an event for the UI to show a rate limit warning
+        const warningEvent = new CustomEvent('apiRateLimitWarning', { 
+            detail: { 
+                current: RATE_LIMIT.requests.length,
+                max: RATE_LIMIT.maxRequests,
+                percentage: usagePercentage * 100
+            }
+        });
+        document.dispatchEvent(warningEvent);
+        
+        console.warn(`Approaching rate limit: ${RATE_LIMIT.requests.length}/${RATE_LIMIT.maxRequests} requests`);
+    }
+    
     // Record this request time
     RATE_LIMIT.requests.push(now);
+    
+    // Update the UI with current usage
+    if (!silent) {
+        const usageEvent = new CustomEvent('apiRateLimitUpdate', { 
+            detail: { 
+                current: RATE_LIMIT.requests.length,
+                max: RATE_LIMIT.maxRequests,
+                percentage: (RATE_LIMIT.requests.length / RATE_LIMIT.maxRequests) * 100
+            }
+        });
+        document.dispatchEvent(usageEvent);
+    }
+    
     return true;
 }
 
@@ -214,67 +268,28 @@ function setApiRegion(region) {
 }
 
 /**
- * Try to use a different CORS proxy with exponential backoff delay
- * @param {number} attempt - Current attempt number
- * @returns {Promise<string>} - The new CORS proxy URL
- */
-async function switchCorsProxy(attempt = 0) {
-    currentProxyIndex = (currentProxyIndex + 1) % CORS_PROXIES.length;
-    const newProxy = CORS_PROXIES[currentProxyIndex];
-    console.log('Switching to CORS proxy:', newProxy);
-    apiStatus.proxy = newProxy;
-    
-    // Calculate exponential backoff delay (100ms, 200ms, 400ms, 800ms, etc.)
-    const backoffDelay = Math.min(2000, 100 * Math.pow(2, attempt));
-    
-    // Reset failed request count when switching proxies
-    // This gives each proxy a fair chance
-    if (attempt > 0 && attempt % CORS_PROXIES.length === 0) {
-        console.log('Tried all proxies, resetting rate limit tracking');
-        RATE_LIMIT.requests = [];
-        RATE_LIMIT.cooldown = false;
-    }
-    
-    // Wait before returning to avoid hammering the new proxy immediately
-    await new Promise(resolve => setTimeout(resolve, backoffDelay));
-    
-    return newProxy;
-}
-
-/**
- * Constructs a URL with the current CORS proxy
+ * Constructs a direct URL to the API endpoint
  * @param {string} endpoint - API endpoint to call
- * @returns {string} - Full URL with proxy
+ * @returns {string} - Full URL to API endpoint
  */
-function getProxiedUrl(endpoint) {
+function getDirectUrl(endpoint) {
     // Ensure endpoint starts with /
     if (!endpoint.startsWith('/')) {
         endpoint = '/' + endpoint;
     }
     
     const baseUrl = API_BASE_URLS[selectedRegion];
-    
-    // Handle proxy-specific URL formatting
-    const proxy = apiStatus.proxy;
-    if (proxy === 'https://api.allorigins.win/raw?url=') {
-        // This proxy requires full URL encoding
-        return `${proxy}${encodeURIComponent(baseUrl + endpoint)}`;
-    } else if (proxy === 'https://corsproxy.io/?') {
-        // This proxy expects the URL right after the ?
-        return `${proxy}${encodeURIComponent(baseUrl + endpoint)}`;
-    } else {
-        // Most proxies expect the URL to be appended directly
-        return `${proxy}${baseUrl}${endpoint}`;
-    }
+    return `${baseUrl}${endpoint}`;
 }
 
 /**
- * Make a fetch request with retry logic for CORS issues
+ * Enhanced API request function with safeguards
  * @param {string} endpoint - API endpoint to call
  * @param {boolean} useCache - Whether to use cache for this request
+ * @param {boolean} bypassRateLimit - For critical requests that should bypass rate limiting
  * @returns {Promise<any>} - Promise resolving to JSON response
  */
-async function fetchWithRetry(endpoint, useCache = true) {
+async function fetchWithRetry(endpoint, useCache = true, bypassRateLimit = false) {
     // Check cache first if enabled
     const cacheKey = endpoint;
     if (useCache && apiCache[cacheKey] && apiCache[cacheKey].expiry > Date.now()) {
@@ -282,25 +297,28 @@ async function fetchWithRetry(endpoint, useCache = true) {
         return apiCache[cacheKey].data;
     }
     
-    // Check rate limits
-    if (!checkRateLimit()) {
+    // Check rate limits unless bypassed
+    if (!bypassRateLimit && !checkRateLimit()) {
         throw new Error('Rate limit exceeded, please wait before making more requests');
     }
     
     let attempts = 0;
-    const maxAttempts = CORS_PROXIES.length * 2;
+    const maxAttempts = 3; // Try a few times with direct access
+    const backoffFactor = 1.5; // Exponential backoff factor
     
     while (attempts < maxAttempts) {
         try {
-            const url = getProxiedUrl(endpoint);
+            const url = getDirectUrl(endpoint);
             console.log(`Attempt ${attempts + 1}/${maxAttempts} for: ${url}`);
             
             const requestStartTime = Date.now();
             const response = await fetch(url, {
                 headers: {
                     'Accept': 'application/json',
-                    'User-Agent': 'BattleTab/1.0 (https://github.com/yourusername/battletab)',
-                }
+                    'User-Agent': 'BattleTab/1.0',
+                },
+                mode: 'cors',
+                credentials: 'omit'
             });
             const requestDuration = Date.now() - requestStartTime;
             
@@ -311,7 +329,6 @@ async function fetchWithRetry(endpoint, useCache = true) {
                 logApiError({
                     endpoint,
                     url,
-                    proxyUsed: apiStatus.proxy,
                     status: response.status,
                     statusText: response.statusText,
                     attempt: attempts + 1,
@@ -319,6 +336,20 @@ async function fetchWithRetry(endpoint, useCache = true) {
                     requestDuration,
                     errorType: 'http_error'
                 });
+                
+                // Check for specific status codes
+                if (response.status === 429) {
+                    // Too Many Requests - implement automatic cooldown
+                    RATE_LIMIT.cooldown = true;
+                    RATE_LIMIT.cooldownUntil = Date.now() + (5 * 60 * 1000); // 5 minute cooldown
+                    
+                    const tooManyRequestsEvent = new CustomEvent('apiTooManyRequests', {
+                        detail: { cooldownUntil: RATE_LIMIT.cooldownUntil }
+                    });
+                    document.dispatchEvent(tooManyRequestsEvent);
+                    
+                    throw new Error('API rate limit exceeded (HTTP 429). System will retry after cooldown period.');
+                }
                 
                 throw new Error(`HTTP error ${response.status}: ${response.statusText}`);
             }
@@ -335,7 +366,6 @@ async function fetchWithRetry(endpoint, useCache = true) {
                 logApiError({
                     endpoint,
                     url,
-                    proxyUsed: apiStatus.proxy,
                     attempt: attempts + 1,
                     maxAttempts,
                     requestDuration,
@@ -350,7 +380,7 @@ async function fetchWithRetry(endpoint, useCache = true) {
             // Update API status
             apiStatus.isWorking = true;
             apiStatus.lastChecked = new Date();
-            apiStatus.message = 'API connection working';
+            apiStatus.message = 'Direct API connection working';
             
             // Cache the response
             if (useCache) {
@@ -366,12 +396,23 @@ async function fetchWithRetry(endpoint, useCache = true) {
             attempts++;
             console.error(`API fetch attempt ${attempts} failed:`, error);
             
+            // Dispatch event for API error
+            const errorEvent = new CustomEvent('apiRequestError', {
+                detail: {
+                    endpoint,
+                    attempt: attempts,
+                    maxAttempts,
+                    error: error.message,
+                    willRetry: attempts < maxAttempts
+                }
+            });
+            document.dispatchEvent(errorEvent);
+            
             // Log network errors
             if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
                 logApiError({
                     endpoint,
-                    url: getProxiedUrl(endpoint),
-                    proxyUsed: apiStatus.proxy,
+                    url: getDirectUrl(endpoint),
                     attempt: attempts,
                     maxAttempts,
                     errorType: 'network_error',
@@ -379,12 +420,7 @@ async function fetchWithRetry(endpoint, useCache = true) {
                 });
             }
             
-            // Switch to next proxy if we've tried this one
-            if (attempts % 2 === 0) {
-                await switchCorsProxy(Math.floor(attempts / 2));
-            }
-            
-            // If we've tried all proxies multiple times, give up
+            // If we've tried maximum times, give up
             if (attempts >= maxAttempts) {
                 apiStatus.isWorking = false;
                 apiStatus.message = `Failed after ${maxAttempts} attempts: ${error.message}`;
@@ -392,17 +428,16 @@ async function fetchWithRetry(endpoint, useCache = true) {
                 // Final error log entry
                 logApiError({
                     endpoint,
-                    proxyUsed: apiStatus.proxy,
                     errorType: 'max_attempts_reached',
                     errorMessage: error.toString(),
                     totalAttempts: attempts
                 });
                 
-                throw new Error(`Failed to fetch after ${maxAttempts} attempts: ${error.message}`);
+                throw new Error(`Failed to fetch after ${maxAttempts} attempts. ${error.message}`);
             }
             
             // Wait before retrying with exponential backoff
-            const backoffDelay = Math.min(5000, 200 * Math.pow(2, Math.floor(attempts / 2)));
+            const backoffDelay = Math.min(10000, 200 * Math.pow(backoffFactor, attempts));
             await new Promise(r => setTimeout(r, backoffDelay));
         }
     }
@@ -532,7 +567,7 @@ async function fetchAllianceEvents(limit = 50, offset = 0) {
 async function testApiConnection() {
     try {
         const testEndpoint = `/alliances/${DOUBLE_OVERCHARGE_ID}`;
-        console.log('Testing API connection with endpoint:', testEndpoint);
+        console.log('Testing direct API connection with endpoint:', testEndpoint);
         
         const testStartTime = Date.now();
         const data = await fetchWithRetry(testEndpoint);
@@ -540,7 +575,7 @@ async function testApiConnection() {
         
         apiStatus.isWorking = true;
         apiStatus.lastChecked = new Date();
-        apiStatus.message = `Connected to API, alliance name: ${data.Name || 'N/A'}`;
+        apiStatus.message = `Direct API connection working, alliance name: ${data.Name || 'N/A'}`;
         console.log('API test successful:', apiStatus);
         
         return {
@@ -552,7 +587,7 @@ async function testApiConnection() {
     } catch (error) {
         apiStatus.isWorking = false;
         apiStatus.lastChecked = new Date();
-        apiStatus.message = `API test failed: ${error.message}`;
+        apiStatus.message = `Direct API test failed: ${error.message}`;
         console.error('API test failed:', error);
         
         return {
@@ -563,6 +598,25 @@ async function testApiConnection() {
     }
 }
 
+/**
+ * Gets current rate limit status for UI display
+ * @returns {Object} Rate limit status information
+ */
+function getRateLimitStatus() {
+    const now = Date.now();
+    // Clean up expired requests from the tracking array
+    RATE_LIMIT.requests = RATE_LIMIT.requests.filter(time => time > now - RATE_LIMIT.timeWindow);
+    
+    return {
+        current: RATE_LIMIT.requests.length,
+        max: RATE_LIMIT.maxRequests,
+        percentage: (RATE_LIMIT.requests.length / RATE_LIMIT.maxRequests) * 100,
+        inCooldown: RATE_LIMIT.cooldown,
+        cooldownRemaining: RATE_LIMIT.cooldown ? Math.max(0, Math.ceil((RATE_LIMIT.cooldownUntil - now) / 1000)) : 0,
+        timeWindow: RATE_LIMIT.timeWindow / 1000
+    };
+}
+
 // Expose functions to global scope
 window.setApiRegion = setApiRegion;
 window.fetchAllianceDeaths = fetchAllianceDeaths;
@@ -570,6 +624,7 @@ window.fetchAllianceKills = fetchAllianceKills;
 window.fetchAllianceEvents = fetchAllianceEvents;
 window.testApiConnection = testApiConnection;
 window.getApiStatus = () => apiStatus;
+window.getRateLimitStatus = getRateLimitStatus; // Expose rate limit status
 
 // Expose error logging functions
 window.getApiErrorLog = getApiErrorLog;
