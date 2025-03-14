@@ -1,0 +1,19 @@
+{
+  "name": "battletab",
+  "version": "1.0.0",
+  "description": "Albion Online battle statistics viewer",
+  "private": true,
+  "scripts": {
+    "dev": "serve .",
+    "build": "echo \"Static site, no build required\""
+  },
+  "keywords": ["albion", "battletab", "pvp", "statistics"],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "serve": "^14.0.0"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}
