@@ -7,6 +7,7 @@ const receiptContent = document.getElementById('receipt-content');
 const downloadButton = document.getElementById('download-receipt');
 const closeButton = document.querySelector('.close-button');
 const autoRefreshToggle = document.getElementById('auto-refresh-toggle');
+const apiStatusMessage = document.getElementById('api-status-message');
 
 let currentEvents = [];
 let currentEventIndex = null;
@@ -325,6 +326,11 @@ function showTestReceipt() {
     }
 }
 
+function updateApiStatus() {
+    const status = window.getApiStatus();
+    apiStatusMessage.textContent = `${status.message} (Proxy: ${status.proxy})`;
+}
+
 function setupEventListeners() {
     // Refresh events when button is clicked
     refreshButton.addEventListener('click', loadAllianceEvents);
@@ -368,6 +374,13 @@ function setupEventListeners() {
     
     // Test receipt button
     document.getElementById('test-receipt').addEventListener('click', showTestReceipt);
+    
+    // Test API button
+    document.getElementById('test-api').addEventListener('click', async () => {
+        const result = await window.testApiConnection();
+        updateApiStatus();
+        alert(result.status.message);
+    });
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -376,6 +389,9 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Load initial data
     loadAllianceEvents();
+    
+    // Test API connection on load
+    window.testApiConnection().then(() => updateApiStatus());
     
     // Check if auto-refresh was previously enabled
     const autoRefreshEnabled = localStorage.getItem('autoRefreshEnabled') === 'true';

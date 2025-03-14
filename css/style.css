@@ -87,13 +87,29 @@ header p {
   display: flex;
   justify-content: center;
   margin-bottom: 1.5rem;
+  max-width: 100%;
+  overflow: hidden;
 }
 
 .logo {
-  max-width: 180px;
+  width: 120px; /* Reduced from 180px */
   height: auto;
   border-radius: 8px;
   box-shadow: var(--card-shadow);
+  object-fit: contain; /* Ensure the image maintains its aspect ratio */
+}
+
+/* Responsive logo adjustments */
+@media (max-width: 768px) {
+  .logo {
+    width: 100px;
+  }
+}
+
+@media (max-width: 480px) {
+  .logo {
+    width: 80px;
+  }
 }
 
 /* Controls section */
@@ -538,6 +554,15 @@ button:focus-visible, .btn:focus-visible, select:focus-visible {
 /* Last refresh info */
 .refresh-info {
   text-align: right;
+  color: var(--light-gray);
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+  margin-top: -1rem;
+}
+
+/* API status */
+.api-status {
+  text-align: left;
   color: var(--light-gray);
   font-size: 0.85rem;
   margin-bottom: 1rem;
