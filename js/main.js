@@ -110,7 +110,6 @@ function downloadReceipt() {
 }
 
 async function loadAllianceDeaths() {
-    // Show loading state
     deathsList.innerHTML = `
         <div class="loading">
             <div class="loading-spinner"></div>
@@ -119,58 +118,36 @@ async function loadAllianceDeaths() {
     `;
     
     try {
-        // First try to get cached deaths from the database
-        const { data: cachedDeaths, error: dbError, source } = await window.db.getDeaths({
-            limit: 50,
-            allianceId: 'TH8JjVwVRiuFnalrzESkRQ'  // Double Overcharge ID
+        // Try to get cached deaths from the database
+        const { data: cachedDeaths, error: dbError } = await window.db.getDeaths({
+            limit: 200,  // increased limit to pull past deaths
+            allianceId: 'TH8JjVwVRiuFnalrzESkRQ'
         });
         
         if (cachedDeaths && cachedDeaths.length > 0) {
-            console.log(`Displaying ${cachedDeaths.length} deaths from ${source || 'unknown source'}`);
+            console.log(`Displaying ${cachedDeaths.length} cached deaths`);
             displayDeaths(cachedDeaths);
-            
-            // If we got data from localStorage, we should still try to fetch from API
-            // to update our records, but we don't need to block the UI
-            if (source === 'localStorage') {
-                setTimeout(async () => {
-                    try {
-                        console.log('Background refresh from API...');
-                        const apiDeaths = await fetchAllianceDeaths();
-                        if (apiDeaths && apiDeaths.length > 0) {
-                            // Cache the results
-                            await window.db.saveDeath(apiDeaths);
-                            // Only update UI if there are more records or newer ones
-                            if (apiDeaths.length > cachedDeaths.length) {
-                                displayDeaths(apiDeaths);
-                            }
-                        }
-                    } catch (error) {
-                        console.error('Background refresh error:', error);
-                    }
-                }, 100);
-            }
+        }
+        
+        // Always fetch fresh data from the API with higher limit
+        const apiDeaths = await fetchAllianceDeaths(200);
+        
+        if (apiDeaths && apiDeaths.length > 0) {
+            await window.db.saveDeath(apiDeaths);
+            displayDeaths(apiDeaths);
         } else {
-            // Nothing in cache or db, fetch from API
-            const apiDeaths = await fetchAllianceDeaths();
-            if (apiDeaths && apiDeaths.length > 0) {
-                // Cache the results
-                await window.db.saveDeath(apiDeaths);
-                displayDeaths(apiDeaths);
-            } else {
-                // No deaths found
-                deathsList.innerHTML = `
-                    <div class="empty-state">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="12" r="10"></circle>
-                            <line x1="12" y1="8" x2="12" y2="12"></line>
-                            <line x1="12" y1="16" x2="12.01" y2="16"></line>
-                        </svg>
-                        <h3>No Deaths Found</h3>
-                        <p>No recent deaths found for Double Overcharge alliance.</p>
-                        <p>Try selecting a different server region or check back later.</p>
-                    </div>
-                `;
-            }
+            deathsList.innerHTML = `
+                <div class="empty-state">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="8" x2="12" y2="12"></line>
+                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                    </svg>
+                    <h3>No Deaths Found</h3>
+                    <p>No recent deaths found for Double Overcharge alliance.</p>
+                    <p>Try selecting a different server region or check back later.</p>
+                </div>
+            `;
         }
     } catch (error) {
         console.error('Error loading deaths:', error);
@@ -194,8 +171,6 @@ async function loadAllianceDeaths() {
                 </button>
             </div>
         `;
-        
-        // Add retry button listener
         document.getElementById('retry-button')?.addEventListener('click', loadAllianceDeaths);
     }
 }

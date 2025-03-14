@@ -121,12 +121,13 @@ async function fetchWithRetry(endpoint) {
 /**
  * Fetch deaths for the Double Overcharge alliance
  * @param {number} limit - Maximum number of deaths to fetch
+ * @param {number} offset - Offset for pagination
  * @returns {Promise<Array>} - Array of death objects
  */
-async function fetchAllianceDeaths(limit = 50) {
+async function fetchAllianceDeaths(limit = 50, offset = 0) {
     try {
-        // First try: alliance deaths endpoint
-        const allianceEndpoint = `/alliances/${DOUBLE_OVERCHARGE_ID}/deaths?limit=${limit}`;
+        // First try: alliance deaths endpoint with pagination
+        const allianceEndpoint = `/alliances/${DOUBLE_OVERCHARGE_ID}/deaths?limit=${limit}&offset=${offset}`;
         console.log('Fetching alliance deaths from:', allianceEndpoint);
         
         try {
@@ -137,7 +138,7 @@ async function fetchAllianceDeaths(limit = 50) {
             console.warn('Alliance deaths endpoint failed, trying backup method:', error.message);
             
             // Second try: general events endpoint filtered for our alliance
-            const eventsEndpoint = `/events?limit=100`;
+            const eventsEndpoint = `/events?limit=100&offset=${offset}`;
             const events = await fetchWithRetry(eventsEndpoint);
             
             console.log(`Fetched ${events.length} events, filtering for alliance deaths`);
