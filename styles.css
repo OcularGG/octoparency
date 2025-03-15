@@ -1,0 +1,70 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f4f4f4;
+}
+
+header {
+    background-color: #333;
+    color: #fff;
+    padding: 1rem;
+    text-align: center;
+}
+
+header input {
+    padding: 0.5rem;
+    margin-right: 0.5rem;
+}
+
+header button {
+    padding: 0.5rem;
+}
+
+main {
+    padding: 1rem;
+}
+
+#results {
+    margin-top: 1rem;
+}
+
+#killmails {
+    margin-top: 1rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1rem;
+}
+
+.killmail {
+    background-color: #fff;
+    border: 1px solid #ccc;
+    padding: 1rem;
+    font-family: 'Courier New', Courier, monospace;
+}
+
+.killmail h3 {
+    margin-top: 0;
+}
+
+.killmail ul {
+    list-style-type: none;
+    padding: 0;
+}
+
+.killmail ul li {
+    margin-bottom: 0.5rem;
+}
+
+.preview-button, .download-button {
+    margin-top: 0.5rem;
+    padding: 0.5rem;
+    background-color: #333;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+}
+
+.preview-button:hover, .download-button:hover {
+    background-color: #555;
+}
