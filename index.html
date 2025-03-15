@@ -3,26 +3,132 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Financial Overview</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Octoparency - GitHub Transparency Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-    <div class="container">
-        <h1>Financial Overview</h1>
-        
-        <h2>Income vs. Expenditure</h2>
-        <canvas id="incomeExpenditureChart" width="400" height="200"></canvas>
-        
-        <h2>Category Breakdown</h2>
-        <canvas id="categoryBreakdownChart" width="400" height="200"></canvas>
-        
-        <h2>Monthly Summary</h2>
-        <canvas id="monthlySummaryChart" width="400" height="200"></canvas>
-        
-        <h2>Net Income Trend</h2>
-        <canvas id="netIncomeTrendChart" width="400" height="200"></canvas>
+    <div class="dashboard-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1>Octoparency</h1>
+            </div>
+            <nav class="sidebar-nav">
+                <ul>
+                    <li class="active"><i class="fas fa-chart-line"></i> Dashboard</li>
+                    <li><i class="fas fa-code-branch"></i> Repositories</li>
+                    <li><i class="fas fa-users"></i> Contributors</li>
+                    <li><i class="fas fa-cog"></i> Settings</li>
+                </ul>
+            </nav>
+            <div class="sidebar-footer">
+                <p>GitHub Transparency Tool</p>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="dashboard-header">
+                <h2>GitHub Analytics Dashboard</h2>
+                <div class="header-actions">
+                    <div class="search-bar">
+                        <input type="text" placeholder="Search repositories...">
+                        <button><i class="fas fa-search"></i></button>
+                    </div>
+                    <div class="user-profile">
+                        <span>Welcome, User</span>
+                        <i class="fas fa-user-circle"></i>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Dashboard Overview Stats -->
+            <div class="stats-overview">
+                <div class="stat-card">
+                    <i class="fas fa-code-branch"></i>
+                    <div class="stat-info">
+                        <h3>Total Repos</h3>
+                        <p class="stat-value">124</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <i class="fas fa-users"></i>
+                    <div class="stat-info">
+                        <h3>Contributors</h3>
+                        <p class="stat-value">843</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <i class="fas fa-code"></i>
+                    <div class="stat-info">
+                        <h3>Commits</h3>
+                        <p class="stat-value">12,456</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <div class="stat-info">
+                        <h3>Issues</h3>
+                        <p class="stat-value">287</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Grid -->
+            <div class="charts-grid">
+                <div class="chart-container">
+                    <div class="chart-header">
+                        <h3>Commits Over Time</h3>
+                        <div class="chart-actions">
+                            <button class="btn-chart-action"><i class="fas fa-ellipsis-v"></i></button>
+                        </div>
+                    </div>
+                    <div class="chart-body">
+                        <canvas id="commitsChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="chart-container">
+                    <div class="chart-header">
+                        <h3>Language Distribution</h3>
+                        <div class="chart-actions">
+                            <button class="btn-chart-action"><i class="fas fa-ellipsis-v"></i></button>
+                        </div>
+                    </div>
+                    <div class="chart-body">
+                        <canvas id="languageChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="chart-container">
+                    <div class="chart-header">
+                        <h3>Contributors Activity</h3>
+                        <div class="chart-actions">
+                            <button class="btn-chart-action"><i class="fas fa-ellipsis-v"></i></button>
+                        </div>
+                    </div>
+                    <div class="chart-body">
+                        <canvas id="contributorsChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="chart-container">
+                    <div class="chart-header">
+                        <h3>Issue Status</h3>
+                        <div class="chart-actions">
+                            <button class="btn-chart-action"><i class="fas fa-ellipsis-v"></i></button>
+                        </div>
+                    </div>
+                    <div class="chart-body">
+                        <canvas id="issuesChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </main>
     </div>
+
     <script src="script.js"></script>
 </body>
 </html>
