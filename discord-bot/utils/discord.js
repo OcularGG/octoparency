@@ -1,4 +1,4 @@
-const { Client, GatewayIntentBits } = require('discord.js');
+const { Client, GatewayIntentBits, Events } = require('discord.js');
 
 // Create a new client instance with necessary intents
 const client = new Client({ 
@@ -10,33 +10,77 @@ const client = new Client({
   ] 
 });
 
+// Add basic error handling for the client
+client.on(Events.Error, error => {
+  console.error('Discord client error:', error);
+});
+
+client.on(Events.Debug, info => {
+  console.log('Debug:', info);
+});
+
+client.on(Events.Warn, warning => {
+  console.warn('Warning:', warning);
+});
+
 // Initialize the Discord client
 async function initializeDiscordClient() {
   return new Promise((resolve, reject) => {
+    // Add timeout to prevent infinite hanging
+    const timeout = setTimeout(() => {
+      reject(new Error('Connection timed out after 30 seconds'));
+    }, 30000);
+    
     // Login to Discord with token
     client.login(process.env.DISCORD_BOT_TOKEN)
-      .catch(reject);
+      .then(() => {
+        clearTimeout(timeout);
+      })
+      .catch(err => {
+        clearTimeout(timeout);
+        reject(err);
+      });
 
-    client.once('ready', async () => {
+    client.once(Events.ClientReady, async () => {
       console.log(`Logged in as ${client.user.tag}`);
       
-      // Setup message handler for prefix commands
-      setupPrefixCommandHandler();
-      
-      resolve(client);
+      try {
+        // Verify that we can access the guild
+        const guild = client.guilds.cache.get(process.env.DISCORD_SERVER_ID);
+        if (!guild) {
+          console.warn(`Bot is not in the specified server (ID: ${process.env.DISCORD_SERVER_ID}). Please invite the bot to this server.`);
+        } else {
+          console.log(`Connected to server: ${guild.name}`);
+        }
+        
+        // Setup message handler for prefix commands
+        setupPrefixCommandHandler();
+        
+        resolve(client);
+      } catch (err) {
+        console.error('Error during initialization:', err);
+        reject(err);
+      }
     });
   });
 }
 
 // Setup the message handler for prefix commands
 function setupPrefixCommandHandler() {
-  client.on('messageCreate', async message => {
+  console.log('Setting up prefix command handler');
+  
+  client.on(Events.MessageCreate, async message => {
+    // Log all messages for debugging
+    console.log(`[Message] ${message.author.tag}: ${message.content}`);
+    
     // Ignore messages from bots or messages that don't start with the prefix
     if (message.author.bot || !message.content.startsWith('!')) return;
     
     // Get the command and arguments
     const args = message.content.slice(1).trim().split(/ +/);
     const command = args.shift().toLowerCase();
+    
+    console.log(`Command received: ${command}`);
     
     try {
       if (command === 'guildcheck') {

@@ -8,7 +8,8 @@
   "scripts": {
     "dev": "vercel dev",
     "deploy": "vercel deploy --prod",
-    "start": "node bot.js"
+    "start": "node bot.js",
+    "check-token": "node check-token.js"
   },
   "dependencies": {
     "discord.js": "^14.11.0",
