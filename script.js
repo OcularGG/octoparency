@@ -1,10 +1,26 @@
+// Console logging utility
+const consoleOutput = document.getElementById('console-output');
+function logToConsole(message, type = 'info') {
+    const logEntry = document.createElement('div');
+    logEntry.className = `log-entry log-${type}`;
+    
+    const timestamp = document.createElement('span');
+    timestamp.className = 'log-timestamp';
+    timestamp.textContent = `[${new Date().toLocaleTimeString()}]`;
+    
+    logEntry.appendChild(timestamp);
+    logEntry.appendChild(document.createTextNode(' ' + message));
+    
+    consoleOutput.appendChild(logEntry);
+    consoleOutput.scrollTop = consoleOutput.scrollHeight;
+}
+
 // Make functions globally available
 window.previewKillmail = function(killmailId) {
-    // Implement preview functionality
+    logToConsole(`Previewing killmail ${killmailId}`);
     const modal = document.getElementById('preview-modal');
     const previewContent = document.getElementById('preview-content');
     
-    // Format the killmail as a receipt
     fetchKillmailDetails(killmailId)
         .then(killmail => {
             if (killmail) {
@@ -12,16 +28,19 @@ window.previewKillmail = function(killmailId) {
                 modal.style.display = 'block';
             } else {
                 alert('Could not find details for this killmail');
+                logToConsole('Could not find killmail details', 'error');
             }
         })
         .catch(error => {
             console.error('Error fetching killmail details:', error);
+            logToConsole(`Error fetching killmail details: ${error.message}`, 'error');
             alert('Error previewing killmail');
         });
 };
 
 window.downloadKillmail = function(killmailId) {
-    // Implement download functionality
+    logToConsole(`Downloading killmail ${killmailId}`);
+    
     fetchKillmailDetails(killmailId)
         .then(killmail => {
             if (killmail) {
@@ -34,6 +53,7 @@ window.downloadKillmail = function(killmailId) {
                 tempDiv.style.fontFamily = 'Courier New, monospace';
                 document.body.appendChild(tempDiv);
                 
+                logToConsole('Creating image from receipt...');
                 // Use html2canvas to convert to image
                 html2canvas(tempDiv).then(canvas => {
                     // Remove the temporary div
@@ -44,13 +64,16 @@ window.downloadKillmail = function(killmailId) {
                     link.download = `killmail-${killmailId}.png`;
                     link.href = canvas.toDataURL('image/png');
                     link.click();
+                    logToConsole('Download completed');
                 });
             } else {
                 alert('Could not find details for this killmail');
+                logToConsole('Could not find killmail details', 'error');
             }
         })
         .catch(error => {
             console.error('Error fetching killmail details:', error);
+            logToConsole(`Error fetching killmail details: ${error.message}`, 'error');
             alert('Error downloading killmail');
         });
 };
@@ -58,13 +81,20 @@ window.downloadKillmail = function(killmailId) {
 async function fetchKillmailDetails(killmailId) {
     try {
         const serverUrl = getSelectedServerUrl();
+        logToConsole(`Fetching killmail details from ${serverUrl}events/${killmailId}`);
+        
         const response = await fetch(`${serverUrl}events/${killmailId}`);
         if (!response.ok) {
+            logToConsole(`HTTP error! status: ${response.status}`, 'error');
             throw new Error(`HTTP error! status: ${response.status}`);
         }
-        return await response.json();
+        
+        const data = await response.json();
+        logToConsole('Killmail details received successfully');
+        return data;
     } catch (error) {
         console.error('Error fetching killmail details:', error);
+        logToConsole(`Error: ${error.message}`, 'error');
         return null;
     }
 }
@@ -125,50 +155,52 @@ async function searchAlbionAPI(searchTerm) {
     const serverUrl = getSelectedServerUrl();
     const resultsContainer = document.getElementById('results');
     const killmailsContainer = document.getElementById('killmails');
-    resultsContainer.innerHTML = 'Loading...';
+    
+    resultsContainer.innerHTML = '<div class="loading">Searching...</div>';
     killmailsContainer.innerHTML = '';
+    
+    logToConsole(`Searching for "${searchTerm}" on ${serverUrl}`);
 
     try {
         const searchUrl = `${serverUrl}search?q=${encodeURIComponent(searchTerm)}`;
-        console.log(`Searching URL: ${searchUrl}`);
-
-        // Log before the fetch
-        console.log('About to fetch...');
+        logToConsole(`Fetching from: ${searchUrl}`);
+        
         const response = await fetch(searchUrl);
-
-        // Log after the fetch
-        console.log('Fetch completed.');
-
+        logToConsole('Search response received');
+        
         if (!response.ok) {
-            console.error(`HTTP error! status: ${response.status}`);
+            logToConsole(`HTTP error! status: ${response.status}`, 'error');
             throw new Error(`HTTP error! status: ${response.status}`);
         }
-
+        
         const rawData = await response.text();
-        console.log('Raw API response:', rawData);
-
+        logToConsole(`Received ${rawData.length} bytes of data`);
+        
         let data;
         try {
             data = JSON.parse(rawData);
+            logToConsole('Successfully parsed JSON data');
         } catch (e) {
-            console.error('JSON parse error:', e);
+            logToConsole(`JSON parse error: ${e.message}`, 'error');
             throw new Error('Failed to parse API response');
         }
 
-        console.log('Search results object:', data);
-
-        resultsContainer.innerHTML = '<h2>Search Results</h2>';
+        resultsContainer.innerHTML = '';
         let resultsFound = false;
 
         if (data && data.players && Array.isArray(data.players) && data.players.length > 0) {
-            resultsContainer.innerHTML += '<h3>Players</h3>';
+            logToConsole(`Found ${data.players.length} player results`);
+            const resultsHeader = document.createElement('h2');
+            resultsHeader.textContent = 'Player Results';
+            resultsContainer.appendChild(resultsHeader);
+            
             data.players.forEach(player => {
                 resultsFound = true;
                 const resultElement = document.createElement('div');
                 resultElement.className = 'search-result';
                 resultElement.textContent = `${player.Name} (Player)`;
                 resultElement.addEventListener('click', () => {
-                    console.log(`Fetching killmails for player: ${player.Id}`);
+                    logToConsole(`Selected player: ${player.Name} (${player.Id})`);
                     fetchKillmails(player.Id, 'player');
                 });
                 resultsContainer.appendChild(resultElement);
@@ -176,91 +208,94 @@ async function searchAlbionAPI(searchTerm) {
         }
 
         if (!resultsFound) {
-            resultsContainer.innerHTML += '<p>No player results found. Try a different search term or server.</p>';
+            logToConsole('No results found', 'warning');
+            resultsContainer.innerHTML = `
+                <div class="warning-message">
+                    <h3>No Results</h3>
+                    <p>No player results found for "${searchTerm}".</p>
+                    <p>Try a different search term or select a different server.</p>
+                </div>`;
         }
 
         saveSearchTermToLocalStorage(searchTerm);
     } catch (error) {
         console.error('Search error:', error);
+        logToConsole(`Error: ${error.message}`, 'error');
         resultsContainer.innerHTML = `
-            <h2>Search Error</h2>
-            <p>${error.message}</p>
-            <p>Please try another search term or select a different server.</p>
-            <p>Technical details: ${error.toString()}</p>
+            <div class="error-message">
+                <h3>Search Error</h3>
+                <p>${error.message}</p>
+                <p>Please try another search term or select a different server.</p>
+            </div>
         `;
     }
 }
 
 async function fetchKillmails(id, type) {
     const serverUrl = getSelectedServerUrl();
-
     const killmailsContainer = document.getElementById('killmails');
-    killmailsContainer.innerHTML = 'Loading killmails...';
+    
+    killmailsContainer.innerHTML = '<div class="loading">Loading killmails...</div>';
+    logToConsole(`Fetching killmails for ${type} with ID: ${id}`);
 
     try {
         let endpoint;
         if (type === 'player') {
             endpoint = `players/${id}/kills`;
-        } else if (type === 'guild') {
-            endpoint = `guilds/${id}/top?range=week&limit=10`;
         } else {
-            killmailsContainer.innerHTML = `Invalid type: ${type}`;
+            logToConsole(`Invalid type: ${type}`, 'error');
+            killmailsContainer.innerHTML = `
+                <div class="error-message">
+                    <h3>Invalid Type</h3>
+                    <p>Invalid type: ${type}</p>
+                </div>`;
             return;
         }
 
         const url = `${serverUrl}${endpoint}`;
-        console.log(`Fetching from URL: ${url}`);
+        logToConsole(`Fetching from URL: ${url}`);
         
-        // Log before the fetch
-        console.log('About to fetch killmails...');
         const response = await fetch(url);
-        
-        // Log after the fetch
-        console.log('Killmail fetch completed.');
+        logToConsole('Killmail response received');
         
         if (!response.ok) {
-            console.error(`HTTP error! status: ${response.status}`);
+            logToConsole(`HTTP error! status: ${response.status}`, 'error');
             throw new Error(`HTTP error! status: ${response.status}`);
         }
         
-        // Log the raw response for debugging
         const rawData = await response.text();
-        console.log('Raw killmail response:', rawData);
+        logToConsole(`Received ${rawData.length} bytes of killmail data`);
         
-        // Try to parse the JSON
         let data;
         try {
             data = JSON.parse(rawData);
+            logToConsole('Successfully parsed killmail data');
         } catch (e) {
-            console.error('JSON parse error:', e);
+            logToConsole(`JSON parse error: ${e.message}`, 'error');
             throw new Error('Failed to parse API response');
         }
-        
-        console.log('Killmail data:', data);
 
         killmailsContainer.innerHTML = '';
         
         if (data && data.length > 0) {
+            logToConsole(`Found ${data.length} killmails`);
+            
             data.forEach(killmail => {
                 const killmailElement = document.createElement('div');
                 killmailElement.className = 'killmail';
                 
-                // Create a safer HTML template
                 let killmailHTML = `<h3>Killmail</h3>`;
                 
-                // For player kills
                 if (killmail.Victim && killmail.Killer) {
-                    // Standard kill data
                     killmailHTML += `
-                        <p>Victim: ${killmail.Victim.Name || 'Unknown'}</p>
-                        <p>Killer: ${killmail.Killer.Name || 'Unknown'}</p>
-                        <p>Fame: ${killmail.TotalVictimKillFame || 0}</p>
-                        <p>Time: ${new Date(killmail.TimeStamp).toLocaleString()}</p>
+                        <p><strong>Victim:</strong> ${killmail.Victim.Name || 'Unknown'}</p>
+                        <p><strong>Killer:</strong> ${killmail.Killer.Name || 'Unknown'}</p>
+                        <p><strong>Fame:</strong> ${killmail.TotalVictimKillFame || 0}</p>
+                        <p><strong>Time:</strong> ${new Date(killmail.TimeStamp).toLocaleString()}</p>
                     `;
                     
-                    // Add items if available
                     if (killmail.Victim.Inventory && killmail.Victim.Inventory.length > 0) {
-                        killmailHTML += `<p>Items Lost:</p><ul>`;
+                        killmailHTML += `<p><strong>Items Lost:</strong></p><ul>`;
                         killmail.Victim.Inventory.forEach(item => {
                             if (item && item.Type) {
                                 killmailHTML += `<li>${item.Type} (x${item.Count || 1})</li>`;
@@ -270,31 +305,26 @@ async function fetchKillmails(id, type) {
                         });
                         killmailHTML += `</ul>`;
                     }
-                } 
-                // For guild top kills
-                else if (killmail.EventId) {
+                } else if (killmail.EventId) {
                     killmailHTML += `
-                        <p>Event ID: ${killmail.EventId}</p>
-                        <p>Fame: ${killmail.Fame || 0}</p>
+                        <p><strong>Event ID:</strong> ${killmail.EventId}</p>
+                        <p><strong>Fame:</strong> ${killmail.Fame || 0}</p>
                     `;
                     
                     if (killmail.Killer && killmail.Victim) {
                         killmailHTML += `
-                            <p>Killer: ${killmail.Killer.Name || 'Unknown'}</p>
-                            <p>Victim: ${killmail.Victim.Name || 'Unknown'}</p>
+                            <p><strong>Killer:</strong> ${killmail.Killer.Name || 'Unknown'}</p>
+                            <p><strong>Victim:</strong> ${killmail.Victim.Name || 'Unknown'}</p>
                         `;
                     }
-                }
-                // Generic case if we don't recognize the format
-                else {
-                    killmailHTML += `<p>ID: ${killmail.Id || killmail.EventId || 'Unknown'}</p>`;
-                    killmailHTML += `<p>Data format not recognized. Raw data in console.</p>`;
+                } else {
+                    killmailHTML += `<p><strong>ID:</strong> ${killmail.Id || killmail.EventId || 'Unknown'}</p>`;
+                    killmailHTML += `<p>Data format not recognized.</p>`;
                 }
                 
-                // Add buttons
                 const eventId = killmail.EventId || killmail.Id || 0;
                 killmailHTML += `
-                    <div>
+                    <div class="killmail-actions">
                         <button class="preview-button" onclick="previewKillmail(${eventId})">Preview</button>
                         <button class="download-button" onclick="downloadKillmail(${eventId})">Download</button>
                     </div>
@@ -304,10 +334,16 @@ async function fetchKillmails(id, type) {
                 killmailsContainer.appendChild(killmailElement);
             });
         } else {
-            killmailsContainer.innerHTML = 'No killmails found for this selection.';
+            logToConsole('No killmails found', 'warning');
+            killmailsContainer.innerHTML = `
+                <div class="warning-message">
+                    <h3>No Killmails</h3>
+                    <p>No killmails found for this player.</p>
+                </div>`;
         }
     } catch (error) {
         console.error('Killmail fetch error:', error);
+        logToConsole(`Error: ${error.message}`, 'error');
         killmailsContainer.innerHTML = `
             <div class="error-message">
                 <h3>Error Fetching Killmails</h3>
@@ -320,7 +356,7 @@ async function fetchKillmails(id, type) {
 
 // localStorage functions for search history
 function saveSearchTermToLocalStorage(searchTerm) {
-    console.log('Saving search term to localStorage:', searchTerm);
+    logToConsole(`Saving search term: ${searchTerm}`);
     const history = JSON.parse(localStorage.getItem('searchHistory') || '[]');
     
     // Check if the search term already exists to avoid duplicates
@@ -340,11 +376,10 @@ function saveSearchTermToLocalStorage(searchTerm) {
     }
     
     localStorage.setItem('searchHistory', JSON.stringify(history));
-    return { data: { search_term: searchTerm } };
 }
 
 function getSearchHistoryFromLocalStorage() {
-    console.log('Getting search history from localStorage');
+    logToConsole('Retrieving search history');
     return JSON.parse(localStorage.getItem('searchHistory') || '[]');
 }
 
@@ -355,38 +390,48 @@ async function displaySearchHistory() {
         const resultsContainer = document.getElementById('results');
         
         if (searchHistory && searchHistory.length > 0) {
-            resultsContainer.innerHTML = '<h2>Search History</h2>';
+            logToConsole(`Found ${searchHistory.length} search history items`);
+            
+            const historyHeader = document.createElement('h2');
+            historyHeader.textContent = 'Search History';
+            resultsContainer.innerHTML = '';
+            resultsContainer.appendChild(historyHeader);
+            
             searchHistory.forEach(entry => {
                 const entryElement = document.createElement('div');
                 entryElement.className = 'search-history-item';
-                entryElement.textContent = `${entry.search_term} (searched at ${new Date(entry.timestamp).toLocaleString()})`;
+                entryElement.textContent = `${entry.search_term} (${new Date(entry.timestamp).toLocaleString()})`;
                 entryElement.addEventListener('click', () => {
                     document.getElementById('search-input').value = entry.search_term;
+                    logToConsole(`Selected history item: ${entry.search_term}`);
                     searchAlbionAPI(entry.search_term);
                 });
                 resultsContainer.appendChild(entryElement);
             });
         } else {
+            logToConsole('No search history found');
             resultsContainer.innerHTML = '<h2>Search History</h2><p>No search history found</p>';
         }
     } catch (error) {
         console.error('Error fetching search history:', error);
+        logToConsole(`Error fetching search history: ${error.message}`, 'error');
         const resultsContainer = document.getElementById('results');
         resultsContainer.innerHTML = '<h2>Search History</h2><p>Error fetching search history</p>';
     }
 }
 
-// Set up event listener for the search button
+// Set up event listeners
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('DOM loaded, setting up event listeners');
+    logToConsole('Application initialized');
     
     // Set up the search button click event
     document.getElementById('search-button').addEventListener('click', () => {
         const searchTerm = document.getElementById('search-input').value;
         if (searchTerm) {
-            console.log('Search button clicked with term:', searchTerm);
+            logToConsole(`Search button clicked with term: ${searchTerm}`);
             searchAlbionAPI(searchTerm);
         } else {
+            logToConsole('Empty search term', 'warning');
             alert('Please enter a search term');
         }
     });
@@ -396,21 +441,43 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.key === 'Enter') {
             const searchTerm = document.getElementById('search-input').value;
             if (searchTerm) {
-                console.log('Enter key pressed with term:', searchTerm);
+                logToConsole(`Enter key pressed with term: ${searchTerm}`);
                 searchAlbionAPI(searchTerm);
             } else {
+                logToConsole('Empty search term', 'warning');
                 alert('Please enter a search term');
             }
         }
     });
     
+    // Setup server change event
+    document.getElementById('server-select').addEventListener('change', (e) => {
+        logToConsole(`Selected server: ${e.target.value}`);
+    });
+    
+    // Setup console clear button
+    document.getElementById('clear-console').addEventListener('click', () => {
+        document.getElementById('console-output').innerHTML = '';
+        logToConsole('Console cleared');
+    });
+    
     // Test API connectivity on page load
+    logToConsole('Testing API connectivity...');
+    const apiStatus = document.getElementById('api-status');
+    
     fetch('https://gameinfo.albiononline.com/api/gameinfo/search?q=test')
         .then(response => {
-            console.log('API connectivity test response:', response.status);
-            if (!response.ok) {
+            if (response.ok) {
+                logToConsole('API connection successful', 'info');
+                apiStatus.textContent = 'API: Connected';
+                apiStatus.className = 'status-indicator status-ok';
+            } else {
+                logToConsole(`API connectivity warning: ${response.status}`, 'warning');
+                apiStatus.textContent = `API: Warning (${response.status})`;
+                apiStatus.className = 'status-indicator status-warning';
+                
                 document.getElementById('results').innerHTML = `
-                    <div class="error-message">
+                    <div class="warning-message">
                         <h3>API Connection Warning</h3>
                         <p>The Albion Online API may not be accessible right now (status: ${response.status}).</p>
                         <p>Searches might not return results.</p>
@@ -419,7 +486,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         })
         .catch(error => {
-            console.error('API connectivity test error:', error);
+            logToConsole(`API connectivity error: ${error.message}`, 'error');
+            apiStatus.textContent = 'API: Disconnected';
+            apiStatus.className = 'status-indicator status-error';
+            
             document.getElementById('results').innerHTML = `
                 <div class="error-message">
                     <h3>API Connection Error</h3>
@@ -435,12 +505,14 @@ document.addEventListener('DOMContentLoaded', () => {
     
     closeButton.addEventListener('click', () => {
         modal.style.display = 'none';
+        logToConsole('Preview modal closed');
     });
     
     // Close modal when clicking outside the content
     window.addEventListener('click', (event) => {
         if (event.target === modal) {
             modal.style.display = 'none';
+            logToConsole('Preview modal closed');
         }
     });
 
