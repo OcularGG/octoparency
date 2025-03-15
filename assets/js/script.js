@@ -71,13 +71,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Dark mode toggle
     const themeToggleBtn = document.getElementById('theme-toggle-btn');
+    const modeText = themeToggleBtn.querySelector('.mode-text');
     const body = document.body;
     
     // Check for saved theme preference or default to light
     const savedTheme = localStorage.getItem('theme');
     if (savedTheme === 'dark') {
         body.classList.add('dark-mode');
-        themeToggleBtn.textContent = 'Light Mode';
+        modeText.textContent = 'Light Mode';
     }
     
     // Theme toggle functionality
@@ -87,7 +88,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Update button text
         const isDarkMode = body.classList.contains('dark-mode');
-        themeToggleBtn.textContent = isDarkMode ? 'Light Mode' : 'Dark Mode';
+        modeText.textContent = isDarkMode ? 'Light Mode' : 'Dark Mode';
         
         // Save preference to localStorage
         localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
