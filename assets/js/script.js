@@ -2,11 +2,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // Logo rotation logic
     const logo = document.querySelector('.logo');
     const logos = [
-        'assets/images/ocular-logos/logo1.png',
-        'assets/images/ocular-logos/logo2.png',
-        'assets/images/ocular-logos/logo3.png',
-        'assets/images/ocular-logos/logo4.png',
-        'assets/images/ocular-logos/logo5.png'
+        '/assets/ocular-logos/logo1.png',
+        '/assets/ocular-logos/logo2.png',
+        '/assets/ocular-logos/logo3.png',
+        '/assets/ocular-logos/logo4.png',
+        '/assets/ocular-logos/logo5.png'
     ];
     let currentLogoIndex = 0;
 

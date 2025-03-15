@@ -8,9 +8,11 @@
   ],
   "routes": [
     { "src": "/assets/(.*)", "dest": "/assets/$1" },
+    { "src": "/pages/(.*)", "dest": "/pages/$1" },
     { "src": "/favicon.ico", "dest": "/assets/images/favicon.ico" },
-    { "handle": "filesystem" },
+    { "src": "^/$", "dest": "/index.html" },
     { "src": "/404", "status": 404, "dest": "/pages/404.html" },
-    { "src": "/(.*)", "dest": "/index.html" }
+    { "handle": "filesystem" },
+    { "src": "/(.*)", "status": 404, "dest": "/pages/404.html" }
   ]
 }
