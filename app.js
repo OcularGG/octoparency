@@ -76,6 +76,7 @@ const closeModalButton = document.querySelector('.close');
 // Current data state
 let currentData = null;
 let isAdminMode = false;
+let charts = {};
 
 // Format numbers for display
 function formatNumber(num) {
@@ -272,7 +273,6 @@ function calculateTotals() {
         'sellable_martlock', 'sellable_thetford', 'sellable_lymhurst',
         'sellable_bridgewatch', 'sellable_fort_sterling', 'sellable_brecilien', 'sellable_caerleon'
     ].forEach(id => {
-        totalLiquidItems += parseInt(currentData[id] || 0);
     });
     currentData.total_liquid_items = totalLiquidItems;
     

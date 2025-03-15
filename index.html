@@ -3,60 +3,226 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Octoparency - Accounting Transparency</title>
+    <title>Octoparency - Financial Transparency</title>
     <link rel="stylesheet" href="styles.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
-    <header>
-        <h1>Octoparency</h1>
-        <p>Financial Transparency Dashboard</p>
-        <button id="admin-login-btn" class="login-btn">Admin Login</button>
-    </header>
-
-    <main>
-        <section class="controls">
-            <button id="refresh-btn">Refresh Data</button>
-            <div class="date-display">
-                <span>Last Updated: </span>
-                <span id="last-updated">Loading...</span>
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo">
+                <h1>Octoparency</h1>
             </div>
-        </section>
+            <nav class="sidebar-nav">
+                <ul>
+                    <li class="active"><a href="#overview" data-section="overview"><i class="fas fa-chart-pie"></i> Overview</a></li>
+                    <li><a href="#assets" data-section="assets"><i class="fas fa-coins"></i> Assets</a></li>
+                    <li><a href="#membership" data-section="membership"><i class="fas fa-users"></i> Membership</a></li>
+                    <li><a href="#data" data-section="data"><i class="fas fa-table"></i> Detailed Data</a></li>
+                </ul>
+            </nav>
+            <div class="sidebar-footer">
+                <button id="admin-login-btn" class="login-btn"><i class="fas fa-lock"></i> Admin</button>
+                <p class="date-display">Last Updated: <span id="last-updated">Loading...</span></p>
+            </div>
+        </aside>
 
-        <section class="data-container">
-            <h2>Financial Overview</h2>
-            <table id="financial-data">
-                <thead>
-                    <tr>
-                        <th>Category</th>
-                        <th>Value</th>
-                        <th class="admin-only">Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- Data will be inserted here via JavaScript -->
-                    <tr><td colspan="3">Loading data...</td></tr>
-                </tbody>
-            </table>
-        </section>
+        <!-- Main content -->
+        <main class="main-content">
+            <!-- Overview section -->
+            <section id="overview" class="dashboard-section active">
+                <div class="section-header">
+                    <h2>Financial Overview</h2>
+                    <button id="refresh-btn"><i class="fas fa-sync-alt"></i> Refresh Data</button>
+                </div>
 
-        <!-- New Admin Form Section -->
-        <section id="admin-form-section" class="admin-only">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-card-header">Total Assets</div>
+                        <div class="stat-card-value" id="total-assets-display">Loading...</div>
+                        <div class="stat-card-footer">
+                            <div class="stat-change" id="assets-change"><i class="fas fa-arrow-up"></i> 0%</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-card-header">Liquid Assets</div>
+                        <div class="stat-card-value" id="liquid-assets-display">Loading...</div>
+                        <div class="stat-card-footer">
+                            <div class="stat-percentage" id="liquid-percentage">0% of total</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-card-header">Illiquid Assets</div>
+                        <div class="stat-card-value" id="illiquid-assets-display">Loading...</div>
+                        <div class="stat-card-footer">
+                            <div class="stat-percentage" id="illiquid-percentage">0% of total</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-card-header">Total Members</div>
+                        <div class="stat-card-value" id="total-members-display">Loading...</div>
+                        <div class="stat-card-footer">
+                            <div class="stat-text" id="active-members-display">0 active</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="charts-container">
+                    <div class="chart-card">
+                        <h3>Assets Distribution</h3>
+                        <canvas id="assets-distribution-chart"></canvas>
+                    </div>
+                    <div class="chart-card">
+                        <h3>Guild Silver Distribution</h3>
+                        <canvas id="silver-distribution-chart"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Assets section -->
+            <section id="assets" class="dashboard-section">
+                <div class="section-header">
+                    <h2>Assets Breakdown</h2>
+                </div>
+                <div class="charts-container">
+                    <div class="chart-card">
+                        <h3>Liquid Assets by Location</h3>
+                        <canvas id="liquid-assets-chart"></canvas>
+                    </div>
+                    <div class="chart-card">
+                        <h3>Illiquid Assets by Location</h3>
+                        <canvas id="illiquid-assets-chart"></canvas>
+                    </div>
+                </div>
+                <div class="data-card">
+                    <h3>Detailed Assets</h3>
+                    <div class="table-container">
+                        <table id="assets-table">
+                            <thead>
+                                <tr>
+                                    <th>Category</th>
+                                    <th>Value</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Will be populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Membership section -->
+            <section id="membership" class="dashboard-section">
+                <div class="section-header">
+                    <h2>Membership Information</h2>
+                </div>
+                <div class="charts-container">
+                    <div class="chart-card">
+                        <h3>Membership Distribution</h3>
+                        <canvas id="membership-chart"></canvas>
+                    </div>
+                    <div class="chart-card">
+                        <h3>Active vs Inactive Members</h3>
+                        <canvas id="active-members-chart"></canvas>
+                    </div>
+                </div>
+                <div class="data-card">
+                    <h3>Detailed Membership Stats</h3>
+                    <div class="table-container">
+                        <table id="membership-table">
+                            <thead>
+                                <tr>
+                                    <th>Category</th>
+                                    <th>Value</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Will be populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Detailed data section -->
+            <section id="data" class="dashboard-section">
+                <div class="section-header">
+                    <h2>Complete Financial Data</h2>
+                </div>
+                <div class="data-card full-width">
+                    <div class="table-container">
+                        <table id="financial-data">
+                            <thead>
+                                <tr>
+                                    <th>Category</th>
+                                    <th>Value</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Data will be inserted here via JavaScript -->
+                                <tr><td colspan="2">Loading data...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Admin Form Section -->
+    <div id="admin-panel" class="admin-panel">
+        <div class="admin-sidebar">
             <div class="admin-header">
-                <h2>Add New Financial Data</h2>
-                <button id="logout-btn">Logout</button>
+                <h2>Admin Panel</h2>
+                <button id="close-admin-btn"><i class="fas fa-times"></i></button>
             </div>
-            <form id="financial-form">
-                <div class="form-grid">
-                    <!-- Form fields will be generated dynamically -->
+            <nav class="admin-nav">
+                <ul>
+                    <li class="active"><a href="#edit-data" data-section="edit-data">Edit Data</a></li>
+                    <li><a href="#submit-new" data-section="submit-new">Submit New Data</a></li>
+                </ul>
+            </nav>
+            <div class="admin-sidebar-footer">
+                <button id="logout-btn" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</button>
+            </div>
+        </div>
+        <div class="admin-content">
+            <section id="edit-data" class="admin-section active">
+                <h2>Edit Current Data</h2>
+                <div class="table-container">
+                    <table id="admin-data-table">
+                        <thead>
+                            <tr>
+                                <th>Category</th>
+                                <th>Value</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Will be populated by JavaScript -->
+                        </tbody>
+                    </table>
                 </div>
-                <div class="form-actions">
-                    <button type="button" id="calculate-btn">Calculate Totals</button>
-                    <button type="submit">Submit New Data</button>
-                </div>
-            </form>
-        </section>
-    </main>
+            </section>
+
+            <section id="submit-new" class="admin-section">
+                <h2>Submit New Financial Data</h2>
+                <form id="financial-form">
+                    <div class="form-grid">
+                        <!-- Form fields will be generated dynamically -->
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" id="calculate-btn"><i class="fas fa-calculator"></i> Calculate Totals</button>
+                        <button type="submit"><i class="fas fa-save"></i> Submit New Data</button>
+                    </div>
+                </form>
+            </section>
+        </div>
+    </div>
 
     <!-- Login Modal -->
     <div id="login-modal" class="modal">
@@ -78,10 +244,6 @@
             </form>
         </div>
     </div>
-
-    <footer>
-        <p>&copy; 2023 Octoparency - Financial Transparency Dashboard</p>
-    </footer>
 
     <script src="app.js"></script>
 </body>
