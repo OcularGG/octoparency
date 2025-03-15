@@ -70,27 +70,23 @@ document.addEventListener('DOMContentLoaded', () => {
     setInterval(transitionLogos, 4500);
 
     // Dark mode toggle
-    const themeToggleBtn = document.getElementById('theme-toggle-btn');
-    const modeText = themeToggleBtn.querySelector('.mode-text');
+    const themeToggleInput = document.getElementById('theme-toggle-input');
     const body = document.body;
     
     // Check for saved theme preference or default to light
     const savedTheme = localStorage.getItem('theme');
     if (savedTheme === 'dark') {
         body.classList.add('dark-mode');
-        modeText.textContent = 'Light Mode';
+        themeToggleInput.checked = true;
     }
     
     // Theme toggle functionality
-    themeToggleBtn.addEventListener('click', () => {
+    themeToggleInput.addEventListener('change', () => {
         // Toggle dark mode class
         body.classList.toggle('dark-mode');
         
-        // Update button text
-        const isDarkMode = body.classList.contains('dark-mode');
-        modeText.textContent = isDarkMode ? 'Light Mode' : 'Dark Mode';
-        
         // Save preference to localStorage
+        const isDarkMode = body.classList.contains('dark-mode');
         localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
     });
 
