@@ -1331,3 +1331,39 @@ function renderActiveMembersChart() {
     charts.activeMembers = new Chart(ctx, {
         type: 'bar',
         data: {
+            labels: data.map(item => item.guild),
+            datasets: [
+                {
+                    label: 'Active',
+                    data: data.map(item => item.active),
+                    backgroundColor: '#2ecc71',
+                    borderWidth: 0
+                },
+                {
+                    label: 'Inactive',
+                    data: data.map(item => item.inactive),
+                    backgroundColor: '#95a5a6',
+                    borderWidth: 0
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            },
+            scales: {
+                x: {
+                    stacked: true
+                },
+                y: {
+                    stacked: true,
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+}
