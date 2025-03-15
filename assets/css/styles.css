@@ -559,20 +559,27 @@ body.dark-mode .toggle-icon::before {
   transition: all 0.3s;
 }
 
+/* Default hover behavior for all buttons */
 .Btn:hover .BG {
   transform: rotate(35deg);
   transform-origin: bottom;
 }
 
+/* Remove the common hover style for svgContainer and implement specific ones */
 .Btn:hover .svgContainer {
+  /* Removing the common style */
   border: 1px solid rgba(206, 206, 206, 0.466);
-  background-color: rgba(214, 214, 214, 0.466);
-  backdrop-filter: blur(4px);
 }
 
 /* YouTube specific styles */
 .youtube-bg {
   background: #ff0000;
+}
+
+.youtube-btn:hover .svgContainer {
+  border: 1px solid rgba(255, 110, 110, 0.466);
+  background-color: rgba(219, 219, 219, 0.466);
+  backdrop-filter: blur(4px);
 }
 
 .youtube-button-container:hover::after {
@@ -596,6 +603,12 @@ body.dark-mode .toggle-icon::before {
   background: #7289da;
 }
 
+.discord-btn:hover .svgContainer {
+  border: 1px solid rgba(206, 206, 206, 0.466);
+  background-color: rgba(214, 214, 214, 0.466);
+  backdrop-filter: blur(4px);
+}
+
 .discord-button-container:hover::after {
   content: "Join our Discord server";
   position: absolute;
@@ -617,6 +630,11 @@ body.dark-mode .toggle-icon::before {
   background: #ff5700;
 }
 
+.reddit-btn:hover .svgContainer {
+  background-color: rgba(209, 209, 209, 0.466);
+  backdrop-filter: blur(4px);
+}
+
 .reddit-button-container:hover::after {
   content: "Follow us on Reddit";
   position: absolute;
@@ -636,6 +654,11 @@ body.dark-mode .toggle-icon::before {
 /* GitHub specific styles */
 .github-bg {
   background: #181818;
+}
+
+.github-btn:hover .svgContainer {
+  background-color: rgba(156, 156, 156, 0.466);
+  backdrop-filter: blur(4px);
 }
 
 .github-button-container:hover::after {
