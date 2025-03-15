@@ -1,0 +1,20 @@
+{
+  "name": "octoparency",
+  "version": "1.0.0",
+  "description": "Octoparency - Your transparency solution for modern projects",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx serve",
+    "build": "echo 'No build step required for static site'"
+  },
+  "keywords": [
+    "html",
+    "css",
+    "javascript"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "serve": "^14.0.0"
+  }
+}
