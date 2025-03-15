@@ -525,10 +525,8 @@ body.dark-mode .toggle-icon::before {
 
 /* Social buttons container */
 .social-buttons-container {
-  margin-top: 20px; /* Not auto anymore - specific value */
+  margin-top: 20px;
   margin-bottom: 20px;
-  padding-top: 15px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1); /* Subtle separator */
   display: flex;
   justify-content: center;
   align-items: center;
@@ -541,7 +539,7 @@ body.dark-mode .toggle-icon::before {
   position: relative;
 }
 
-/* Completely redesigned social buttons */
+/* Redesigned social buttons with transparent background */
 .Btn {
   width: 45px;
   height: 45px;
@@ -553,8 +551,7 @@ body.dark-mode .toggle-icon::before {
   position: relative;
   cursor: pointer;
   transition: all 0.3s;
-  border-radius: 50%; /* Make buttons circular */
-  overflow: hidden; /* Ensure the gradient stays within the circle */
+  border-radius: 50%; /* Keep buttons circular */
 }
 
 .svgContainer {
@@ -563,21 +560,43 @@ body.dark-mode .toggle-icon::before {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%; /* Circular container */
-  background: linear-gradient(135deg, #0F52BA, #1E90FF); /* Sapphire blue gradient */
+  background: transparent; /* Transparent background */
   transition: all 0.3s ease;
-  z-index: 1;
+  border: none; /* Remove border */
 }
 
-/* Common hover effect for SVG icons */
-.Btn:hover svg {
+/* Define gradient for SVG fill */
+.Btn svg {
+  transition: transform 0.3s ease;
+  fill: url(#blue-gradient); /* Will be defined in the HTML */
+  width: 70%; /* Adjust size as needed */
+  height: 70%;
+}
+
+/* Social media icon hover effects */
+.youtube-btn:hover svg {
+  fill: #FF0000; /* YouTube red */
   transform: scale(1.15);
 }
 
-/* SVG styling */
-.Btn svg {
-  transition: transform 0.3s ease;
-  z-index: 3;
+.discord-btn:hover svg {
+  fill: #7289DA; /* Discord blue/purple */
+  transform: scale(1.15);
+}
+
+.reddit-btn:hover svg {
+  fill: #FF5700; /* Reddit orange */
+  transform: scale(1.15);
+}
+
+.github-btn:hover svg {
+  fill: #181818; /* GitHub dark */
+  transform: scale(1.15);
+}
+
+/* Remove background elements that are no longer needed */
+.BG {
+  display: none;
 }
 
 /* Tooltip styles for all buttons */
@@ -597,26 +616,6 @@ body.dark-mode .toggle-icon::before {
   content: attr(data-tooltip);
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   z-index: 100;
-}
-
-/* YouTube specific styles */
-.youtube-btn:hover .svgContainer {
-  background: #ff0000; /* YouTube red */
-}
-
-/* Discord specific styles */
-.discord-btn:hover .svgContainer {
-  background: #7289DA; /* Discord blue/purple */
-}
-
-/* Reddit specific styles */
-.reddit-btn:hover .svgContainer {
-  background: #FF5700; /* Reddit orange */
-}
-
-/* GitHub specific styles */
-.github-btn:hover .svgContainer {
-  background: #181818; /* GitHub dark */
 }
 
 /* Responsive adjustments for social buttons */
