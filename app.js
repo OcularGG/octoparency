@@ -273,6 +273,7 @@ function calculateTotals() {
         'sellable_martlock', 'sellable_thetford', 'sellable_lymhurst',
         'sellable_bridgewatch', 'sellable_fort_sterling', 'sellable_brecilien', 'sellable_caerleon'
     ].forEach(id => {
+        totalLiquidItems += parseInt(currentData[id] || 0);
     });
     currentData.total_liquid_items = totalLiquidItems;
     
@@ -589,3 +590,744 @@ financialForm.addEventListener('submit', async function(e) {
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', initDashboard);
+
+// Dashboard state
+let charts = {};
+
+// DOM content loaded - initialize everything
+document.addEventListener('DOMContentLoaded', function() {
+    setupEventListeners();
+    initDashboard();
+});
+
+// Setup all event listeners
+function setupEventListeners() {
+    // Navigation
+    const navLinks = document.querySelectorAll('.sidebar-nav a');
+    navLinks.forEach(link => {
+        link.addEventListener('click', handleNavigation);
+    });
+
+    // Admin navigation
+    const adminNavLinks = document.querySelectorAll('.admin-nav a');
+    adminNavLinks.forEach(link => {
+        link.addEventListener('click', handleAdminNavigation);
+    });
+
+    // Buttons
+    const refreshButton = document.getElementById('refresh-btn');
+    const loginButton = document.getElementById('admin-login-btn');
+    const logoutButton = document.getElementById('logout-btn');
+    const closeAdminButton = document.getElementById('close-admin-btn');
+    const calculateButton = document.getElementById('calculate-btn');
+    
+    if (refreshButton) refreshButton.addEventListener('click', refreshData);
+    if (loginButton) loginButton.addEventListener('click', showLoginModal);
+    if (logoutButton) logoutButton.addEventListener('click', handleLogout);
+    if (closeAdminButton) closeAdminButton.addEventListener('click', closeAdminPanel);
+    if (calculateButton) calculateButton.addEventListener('click', calculateTotals);
+
+    // Login modal functionality
+    const loginModal = document.getElementById('login-modal');
+    const loginForm = document.getElementById('login-form');
+    const closeModalButton = document.querySelector('.close');
+    
+    if (loginButton) {
+        loginButton.addEventListener('click', function() {
+            if (loginModal) {
+                loginModal.style.display = 'block';
+                const usernameInput = document.getElementById('username');
+                if (usernameInput) usernameInput.focus();
+            } else {
+                console.error("Login modal element not found!");
+            }
+        });
+    }
+    
+    if (closeModalButton) {
+        closeModalButton.addEventListener('click', function() {
+            if (loginModal) {
+                loginModal.style.display = 'none';
+                if (loginForm) loginForm.reset();
+            }
+        });
+    }
+    
+    window.addEventListener('click', function(event) {
+        if (event.target == loginModal) {
+            loginModal.style.display = 'none';
+            if (loginForm) loginForm.reset();
+        }
+    });
+    
+    if (loginForm) {
+        loginForm.addEventListener('submit', handleLogin);
+    }
+    
+    // Form submission
+    const financialForm = document.getElementById('financial-form');
+    if (financialForm) {
+        financialForm.addEventListener('submit', handleFormSubmit);
+    }
+}
+
+// Handle navigation clicks
+function handleNavigation(e) {
+    e.preventDefault();
+    
+    // Update active class on nav items
+    const navLinks = document.querySelectorAll('.sidebar-nav a');
+    navLinks.forEach(link => {
+        link.parentElement.classList.remove('active');
+    });
+    this.parentElement.classList.add('active');
+    
+    // Show the corresponding section
+    const sectionId = this.getAttribute('data-section');
+    const sections = document.querySelectorAll('.dashboard-section');
+    sections.forEach(section => {
+        section.classList.remove('active');
+    });
+    document.getElementById(sectionId).classList.add('active');
+    
+    // If we're showing a chart section, make sure charts are rendered
+    if (sectionId === 'overview' || sectionId === 'assets' || sectionId === 'membership') {
+        renderCharts();
+    }
+}
+
+// Handle admin navigation clicks
+function handleAdminNavigation(e) {
+    e.preventDefault();
+    
+    // Update active class on nav items
+    const navLinks = document.querySelectorAll('.admin-nav a');
+    navLinks.forEach(link => {
+        link.parentElement.classList.remove('active');
+    });
+    this.parentElement.classList.add('active');
+    
+    // Show the corresponding section
+    const sectionId = this.getAttribute('data-section');
+    const sections = document.querySelectorAll('.admin-section');
+    sections.forEach(section => {
+        section.classList.remove('active');
+    });
+    document.getElementById(sectionId).classList.add('active');
+}
+
+// Handle login form submission
+function handleLogin(e) {
+    e.preventDefault();
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+    
+    if (validateLogin(username, password)) {
+        document.getElementById('login-modal').style.display = 'none';
+        this.reset();
+        openAdminPanel();
+    } else {
+        alert('Invalid username or password');
+    }
+}
+
+// Handle form submission
+async function handleFormSubmit(e) {
+    e.preventDefault();
+    const formData = getFormData();
+    const success = await submitFinancialData(formData);
+    if (success) {
+        await refreshData();
+        // Switch to edit data tab
+        const editDataLink = document.querySelector('.admin-nav a[data-section="edit-data"]');
+        if (editDataLink) editDataLink.click();
+    }
+}
+
+// Open admin panel
+function openAdminPanel() {
+    const adminPanel = document.getElementById('admin-panel');
+    if (adminPanel) {
+        adminPanel.classList.add('active');
+        setAdminMode(true);
+        populateAdminTable(currentData);
+        generateDataEntryForm();
+    }
+}
+
+// Close admin panel
+function closeAdminPanel() {
+    const adminPanel = document.getElementById('admin-panel');
+    if (adminPanel) {
+        adminPanel.classList.remove('active');
+        setAdminMode(false);
+    }
+}
+
+// Handle logout
+function handleLogout() {
+    closeAdminPanel();
+}
+
+// Initialize dashboard data and views
+async function initDashboard() {
+    try {
+        await refreshData();
+    } catch (error) {
+        console.error('Error initializing dashboard:', error);
+    }
+}
+
+// Refresh data from the database
+async function refreshData() {
+    try {
+        const data = await fetchLatestFinancialData();
+        if (data) {
+            currentData = data;
+            
+            // Update all displays
+            updateDashboardDisplays(data);
+            populateDetailedTable(data);
+            populateAssetsTable(data);
+            populateMembershipTable(data);
+            renderCharts();
+            
+            // If admin mode is active, update admin views
+            if (isAdminMode) {
+                populateAdminTable(data);
+                generateDataEntryForm();
+            }
+        }
+    } catch (error) {
+        console.error('Error refreshing data:', error);
+    }
+}
+
+// Update the dashboard displays with the latest data
+function updateDashboardDisplays(data) {
+    // Update last updated timestamp
+    const lastUpdatedElement = document.getElementById('last-updated');
+    if (lastUpdatedElement) {
+        lastUpdatedElement.textContent = formatDate(data.created_at);
+    }
+    
+    // Update stat cards
+    updateStatCard('total-assets-display', data.total_assets);
+    updateStatCard('liquid-assets-display', data.total_liquid_assets);
+    updateStatCard('illiquid-assets-display', data.total_illiquid_assets);
+    updateStatCard('total-members-display', data.total_members);
+    
+    // Update percentages
+    if (data.total_assets > 0) {
+        const liquidPercentage = Math.round(data.total_liquid_assets / data.total_assets * 100);
+        const illiquidPercentage = Math.round(data.total_illiquid_assets / data.total_assets * 100);
+        
+        updateElement('liquid-percentage', `${liquidPercentage}% of total`);
+        updateElement('illiquid-percentage', `${illiquidPercentage}% of total`);
+    }
+    
+    // Update member stats
+    updateElement('active-members-display', `${formatNumber(data.total_active_members)} active`);
+    
+    // Update liquid change display
+    const changeElement = document.getElementById('assets-change');
+    if (changeElement && data.liquid_change) {
+        const isPositive = data.liquid_change >= 0;
+        const changeIcon = isPositive ? 'fa-arrow-up' : 'fa-arrow-down';
+        const changeClass = isPositive ? 'positive' : 'negative';
+        
+        changeElement.innerHTML = `<i class="fas ${changeIcon}"></i> ${formatNumber(Math.abs(data.liquid_change))}`;
+        changeElement.className = `stat-change ${changeClass}`;
+    }
+}
+
+// Update a stat card value
+function updateStatCard(elementId, value) {
+    const element = document.getElementById(elementId);
+    if (element) {
+        element.textContent = formatNumber(value);
+    }
+}
+
+// Update any element's text content
+function updateElement(elementId, text) {
+    const element = document.getElementById(elementId);
+    if (element) {
+        element.textContent = text;
+    }
+}
+
+// Populate the detailed data table
+function populateDetailedTable(data) {
+    const table = document.getElementById('financial-data');
+    if (!table) return;
+    
+    populateTable(data);
+}
+
+// Populate the assets table
+function populateAssetsTable(data) {
+    const table = document.getElementById('assets-table');
+    if (!table) return;
+    
+    const tbody = table.querySelector('tbody');
+    tbody.innerHTML = '';
+    
+    // Filter for asset-related categories
+    const assetCategories = dataCategories.filter(cat => 
+        cat.group === 'Assets' || 
+        cat.group === 'Guild Silver' || 
+        cat.group === 'Sellable Items' || 
+        cat.group === 'Illiquid Assets'
+    );
+    
+    // Group categories and populate table
+    let currentGroup = '';
+    
+    assetCategories.forEach(category => {
+        // If this is a new group, add a group header row
+        if (category.group !== currentGroup) {
+            currentGroup = category.group;
+            const groupRow = document.createElement('tr');
+            groupRow.className = 'category-group';
+            groupRow.innerHTML = `<td colspan="2">${currentGroup}</td>`;
+            tbody.appendChild(groupRow);
+        }
+        
+        // Add the data row
+        const row = document.createElement('tr');
+        const value = data[category.id] || 0;
+        
+        row.innerHTML = `
+            <td>${category.name}</td>
+            <td>${formatNumber(value)}</td>
+        `;
+        
+        tbody.appendChild(row);
+    });
+}
+
+// Populate the membership table
+function populateMembershipTable(data) {
+    const table = document.getElementById('membership-table');
+    if (!table) return;
+    
+    const tbody = table.querySelector('tbody');
+    tbody.innerHTML = '';
+    
+    // Filter for membership-related categories
+    const membershipCategories = dataCategories.filter(cat => cat.group === 'Membership');
+    
+    membershipCategories.forEach(category => {
+        // Add the data row
+        const row = document.createElement('tr');
+        const value = data[category.id] || 0;
+        
+        row.innerHTML = `
+            <td>${category.name}</td>
+            <td>${formatNumber(value)}</td>
+        `;
+        
+        tbody.appendChild(row);
+    });
+}
+
+// Populate the admin table for editing data
+function populateAdminTable(data) {
+    const table = document.getElementById('admin-data-table');
+    if (!table) return;
+    
+    const tbody = table.querySelector('tbody');
+    tbody.innerHTML = '';
+    
+    // Group categories and populate table
+    let currentGroup = '';
+    
+    dataCategories.forEach(category => {
+        // If this is a new group, add a group header row
+        if (category.group !== currentGroup) {
+            currentGroup = category.group;
+            const groupRow = document.createElement('tr');
+            groupRow.className = 'category-group';
+            groupRow.innerHTML = `<td colspan="3">${currentGroup}</td>`;
+            tbody.appendChild(groupRow);
+        }
+        
+        // Add the data row
+        const row = document.createElement('tr');
+        row.dataset.category = category.id;
+        const value = data[category.id] || 0;
+        
+        // Create cells - name cell and value cell
+        const nameCell = document.createElement('td');
+        nameCell.textContent = category.name;
+        
+        const valueCell = document.createElement('td');
+        valueCell.textContent = formatNumber(value);
+        valueCell.className = 'value-cell';
+        valueCell.dataset.value = value;
+        
+        // Create action cell
+        const actionCell = document.createElement('td');
+        
+        if (!category.calculated) {
+            const editButton = document.createElement('button');
+            editButton.className = 'edit-btn';
+            editButton.innerHTML = '<i class="fas fa-edit"></i> Edit';
+            editButton.addEventListener('click', () => makeValueEditable(valueCell, category.id));
+            actionCell.appendChild(editButton);
+        } else {
+            actionCell.textContent = '(Calculated)';
+        }
+        
+        // Append cells to row
+        row.appendChild(nameCell);
+        row.appendChild(valueCell);
+        row.appendChild(actionCell);
+        
+        tbody.appendChild(row);
+    });
+}
+
+// Render all charts
+function renderCharts() {
+    if (!currentData) return;
+    
+    // Assets distribution chart
+    renderAssetsDistributionChart();
+    
+    // Guild silver distribution chart
+    renderSilverDistributionChart();
+    
+    // Liquid assets by location chart
+    renderLiquidAssetsByLocationChart();
+    
+    // Illiquid assets by location chart
+    renderIlliquidAssetsByLocationChart();
+    
+    // Membership chart
+    renderMembershipChart();
+    
+    // Active members chart
+    renderActiveMembersChart();
+}
+
+// Render assets distribution chart
+function renderAssetsDistributionChart() {
+    const ctx = document.getElementById('assets-distribution-chart');
+    if (!ctx) return;
+    
+    // Destroy existing chart if it exists
+    if (charts.assetsDistribution) {
+        charts.assetsDistribution.destroy();
+    }
+    
+    const data = [
+        currentData.total_liquid_assets || 0,
+        currentData.total_illiquid_assets || 0
+    ];
+    
+    charts.assetsDistribution = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Liquid Assets', 'Illiquid Assets'],
+            datasets: [{
+                data: data,
+                backgroundColor: ['#3498db', '#e74c3c'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const value = context.raw;
+                            const total = data.reduce((a, b) => a + b, 0);
+                            const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+                            return `${formatNumber(value)} (${percentage}%)`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Render silver distribution chart
+function renderSilverDistributionChart() {
+    const ctx = document.getElementById('silver-distribution-chart');
+    if (!ctx) return;
+    
+    // Destroy existing chart if it exists
+    if (charts.silverDistribution) {
+        charts.silverDistribution.destroy();
+    }
+    
+    const data = [
+        currentData.ocular_silver || 0,
+        currentData.university_silver || 0,
+        currentData.vanguard_silver || 0
+    ];
+    
+    charts.silverDistribution = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['OCULAR', 'OCULAR University', 'OCULAR Vanguard'],
+            datasets: [{
+                data: data,
+                backgroundColor: ['#3498db', '#2ecc71', '#9b59b6'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const value = context.raw;
+                            const total = data.reduce((a, b) => a + b, 0);
+                            const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+                            return `${formatNumber(value)} (${percentage}%)`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Render liquid assets by location chart
+function renderLiquidAssetsByLocationChart() {
+    const ctx = document.getElementById('liquid-assets-chart');
+    if (!ctx) return;
+    
+    // Destroy existing chart if it exists
+    if (charts.liquidAssets) {
+        charts.liquidAssets.destroy();
+    }
+    
+    // Get sellable items by location
+    const locations = [
+        {name: 'SIV HO', value: currentData.sellable_siv_ho || 0},
+        {name: 'Delta HQ', value: currentData.sellable_delta_hq || 0},
+        {name: 'Coast HQ', value: currentData.sellable_coast_hq || 0},
+        {name: 'Martlock', value: currentData.sellable_martlock || 0},
+        {name: 'Thetford', value: currentData.sellable_thetford || 0},
+        {name: 'Lymhurst', value: currentData.sellable_lymhurst || 0},
+        {name: 'Bridgewatch', value: currentData.sellable_bridgewatch || 0},
+        {name: 'Fort Sterling', value: currentData.sellable_fort_sterling || 0},
+        {name: 'Brecilien', value: currentData.sellable_brecilien || 0},
+        {name: 'Caerleon', value: currentData.sellable_caerleon || 0}
+    ];
+    
+    // Sort by value, descending
+    locations.sort((a, b) => b.value - a.value);
+    
+    charts.liquidAssets = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: locations.map(loc => loc.name),
+            datasets: [{
+                label: 'Sellable Items Value',
+                data: locations.map(loc => loc.value),
+                backgroundColor: '#3498db',
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return formatNumber(context.raw);
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            if (value >= 1000000) {
+                                return (value / 1000000).toFixed(1) + 'M';
+                            } else if (value >= 1000) {
+                                return (value / 1000).toFixed(1) + 'K';
+                            }
+                            return value;
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Render illiquid assets by location chart
+function renderIlliquidAssetsByLocationChart() {
+    const ctx = document.getElementById('illiquid-assets-chart');
+    if (!ctx) return;
+    
+    // Destroy existing chart if it exists
+    if (charts.illiquidAssets) {
+        charts.illiquidAssets.destroy();
+    }
+    
+    // Get illiquid assets by location
+    const locations = [
+        {name: 'SIV HO', value: currentData.illiquid_siv_ho || 0},
+        {name: 'Delta HQ', value: currentData.illiquid_delta_hq || 0},
+        {name: 'Coast HQ', value: currentData.illiquid_coast_hq || 0},
+        {name: 'Martlock', value: currentData.illiquid_martlock || 0},
+        {name: 'Thetford', value: currentData.illiquid_thetford || 0},
+        {name: 'Lymhurst', value: currentData.illiquid_lymhurst || 0},
+        {name: 'Bridgewatch', value: currentData.illiquid_bridgewatch || 0},
+        {name: 'Fort Sterling', value: currentData.illiquid_fort_sterling || 0},
+        {name: 'Brecilien', value: currentData.illiquid_brecilien || 0},
+        {name: 'Caerleon', value: currentData.illiquid_caerleon || 0}
+    ];
+    
+    // Sort by value, descending
+    locations.sort((a, b) => b.value - a.value);
+    
+    charts.illiquidAssets = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: locations.map(loc => loc.name),
+            datasets: [{
+                label: 'Illiquid Assets Value',
+                data: locations.map(loc => loc.value),
+                backgroundColor: '#e74c3c',
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return formatNumber(context.raw);
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            if (value >= 1000000) {
+                                return (value / 1000000).toFixed(1) + 'M';
+                            } else if (value >= 1000) {
+                                return (value / 1000).toFixed(1) + 'K';
+                            }
+                            return value;
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Render membership distribution chart
+function renderMembershipChart() {
+    const ctx = document.getElementById('membership-chart');
+    if (!ctx) return;
+    
+    // Destroy existing chart if it exists
+    if (charts.membership) {
+        charts.membership.destroy();
+    }
+    
+    const data = [
+        currentData.ocular_members || 0,
+        currentData.university_members || 0,
+        currentData.vanguard_members || 0
+    ];
+    
+    charts.membership = new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: ['OCULAR', 'OCULAR University', 'OCULAR Vanguard'],
+            datasets: [{
+                data: data,
+                backgroundColor: ['#3498db', '#2ecc71', '#9b59b6'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const value = context.raw;
+                            const total = data.reduce((a, b) => a + b, 0);
+                            const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+                            return `${value} members (${percentage}%)`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Render active members chart
+function renderActiveMembersChart() {
+    const ctx = document.getElementById('active-members-chart');
+    if (!ctx) return;
+    
+    // Destroy existing chart if it exists
+    if (charts.activeMembers) {
+        charts.activeMembers.destroy();
+    }
+    
+    // Calculate active/inactive members by guild
+    const data = [
+        {
+            guild: 'OCULAR',
+            active: currentData.ocular_active_members || 0,
+            inactive: (currentData.ocular_members || 0) - (currentData.ocular_active_members || 0)
+        },
+        {
+            guild: 'OCULAR University',
+            active: currentData.university_active_members || 0,
+            inactive: (currentData.university_members || 0) - (currentData.university_active_members || 0)
+        },
+        {
+            guild: 'OCULAR Vanguard',
+            active: currentData.vanguard_active_members || 0,
+            inactive: (currentData.vanguard_members || 0) - (currentData.vanguard_active_members || 0)
+        }
+    ];
+    
+    charts.activeMembers = new Chart(ctx, {
+        type: 'bar',
+        data: {
