@@ -3,163 +3,62 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Octoparency - Financial Dashboard</title>
+    <title>Octoparency - Accounting Transparency</title>
     <link rel="stylesheet" href="styles.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Add SheetJS (xlsx) library for Excel file parsing -->
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
-    <div class="dashboard-container">
-        <!-- Sidebar -->
-        <div class="sidebar">
-            <div class="sidebar-header">
-                <h1>Octoparency</h1>
-            </div>
-            <nav class="sidebar-nav">
-                <ul>
-                    <li class="active"><i class="fas fa-chart-line"></i> <span>Dashboard</span></li>
-                    <li><i class="fas fa-coins"></i> <span>Assets</span></li>
-                    <li><i class="fas fa-money-bill-wave"></i> <span>Liquid Value</span></li>
-                    <li><i class="fas fa-users"></i> <span>Members</span></li>
-                    <li><i class="fas fa-history"></i> <span>History</span></li>
-                    <li><i class="fas fa-cog"></i> <span>Settings</span></li>
-                </ul>
-            </nav>
-            <div class="sidebar-footer">
-                <p>© 2023 Octoparency</p>
-            </div>
-        </div>
+    <header>
+        <h1>Octoparency</h1>
+        <p>Financial Transparency Dashboard</p>
+    </header>
 
-        <!-- Main Content -->
-        <div class="main-content">
-            <div class="dashboard-header">
-                <h1>Financial Dashboard</h1>
-                <div class="header-actions">
-                    <div class="search-bar">
-                        <input type="text" placeholder="Search...">
-                        <button><i class="fas fa-search"></i></button>
-                    </div>
-                    <div class="user-profile">
-                        <i class="fas fa-user-circle"></i>
-                        <span>Admin</span>
-                    </div>
-                </div>
+    <main>
+        <section class="controls">
+            <button id="refresh-btn">Refresh Data</button>
+            <button id="toggle-admin-btn">Toggle Admin Mode</button>
+            <div class="date-display">
+                <span>Last Updated: </span>
+                <span id="last-updated">Loading...</span>
             </div>
+        </section>
 
-            <!-- Stats Cards -->
-            <div class="stats-overview">
-                <div class="stat-card" id="total-value-card">
-                    <i class="fas fa-money-bill-alt"></i>
-                    <div class="stat-info">
-                        <h3>Total Value</h3>
-                        <div class="stat-value" id="total-value">Loading...</div>
-                    </div>
-                </div>
-                <div class="stat-card" id="liquid-assets-card">
-                    <i class="fas fa-coins"></i>
-                    <div class="stat-info">
-                        <h3>Liquid Assets</h3>
-                        <div class="stat-value" id="liquid-assets">Loading...</div>
-                    </div>
-                </div>
-                <div class="stat-card" id="illiquid-assets-card">
-                    <i class="fas fa-warehouse"></i>
-                    <div class="stat-info">
-                        <h3>Illiquid Assets</h3>
-                        <div class="stat-value" id="illiquid-assets">Loading...</div>
-                    </div>
-                </div>
-                <div class="stat-card" id="owed-members-card">
-                    <i class="fas fa-handshake"></i>
-                    <div class="stat-info">
-                        <h3>Owed to Members</h3>
-                        <div class="stat-value" id="owed-members">Loading...</div>
-                    </div>
-                </div>
-            </div>
+        <section class="data-container">
+            <h2>Financial Overview</h2>
+            <table id="financial-data">
+                <thead>
+                    <tr>
+                        <th>Category</th>
+                        <th>Value</th>
+                        <th class="admin-only">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Data will be inserted here via JavaScript -->
+                    <tr><td colspan="3">Loading data...</td></tr>
+                </tbody>
+            </table>
+        </section>
 
-            <!-- Charts -->
-            <div class="charts-grid">
-                <div class="chart-container">
-                    <div class="chart-header">
-                        <h2>Guild Total Value Over Time</h2>
-                        <div class="chart-actions">
-                            <button id="gtv-monthly"><i class="fas fa-calendar-alt"></i> Monthly</button>
-                            <button id="gtv-all"><i class="fas fa-calendar"></i> All</button>
-                        </div>
-                    </div>
-                    <div class="chart-body">
-                        <canvas id="guildTotalValueChart"></canvas>
-                    </div>
+        <!-- New Admin Form Section -->
+        <section id="admin-form-section" class="admin-only">
+            <h2>Add New Financial Data</h2>
+            <form id="financial-form">
+                <div class="form-grid">
+                    <!-- Form fields will be generated dynamically -->
                 </div>
-                
-                <div class="chart-container">
-                    <div class="chart-header">
-                        <h2>Asset Distribution</h2>
-                        <div class="chart-actions">
-                            <button id="asset-refresh"><i class="fas fa-sync-alt"></i> Refresh</button>
-                        </div>
-                    </div>
-                    <div class="chart-body">
-                        <canvas id="liquidIlliquidChart"></canvas>
-                    </div>
+                <div class="form-actions">
+                    <button type="button" id="calculate-btn">Calculate Totals</button>
+                    <button type="submit">Submit New Data</button>
                 </div>
-                
-                <div class="chart-container">
-                    <div class="chart-header">
-                        <h2>Net Liquid Value Trend</h2>
-                        <div class="chart-actions">
-                            <button id="nlv-monthly"><i class="fas fa-calendar-alt"></i> Monthly</button>
-                            <button id="nlv-all"><i class="fas fa-calendar"></i> All</button>
-                        </div>
-                    </div>
-                    <div class="chart-body">
-                        <canvas id="netLiquidValueChart"></canvas>
-                    </div>
-                </div>
-                
-                <div class="chart-container">
-                    <div class="chart-header">
-                        <h2>Amount Owed By Category</h2>
-                        <div class="chart-actions">
-                            <button id="owed-refresh"><i class="fas fa-sync-alt"></i> Refresh</button>
-                        </div>
-                    </div>
-                    <div class="chart-body">
-                        <canvas id="amountOwedChart"></canvas>
-                    </div>
-                </div>
-                
-                <div class="chart-container">
-                    <div class="chart-header">
-                        <h2>Siphoned Net Value Trend</h2>
-                        <div class="chart-actions">
-                            <button id="siphon-quarterly"><i class="fas fa-calendar-alt"></i> Quarterly</button>
-                            <button id="siphon-all"><i class="fas fa-calendar"></i> All</button>
-                        </div>
-                    </div>
-                    <div class="chart-body">
-                        <canvas id="siphonedNetChart"></canvas>
-                    </div>
-                </div>
-                
-                <div class="chart-container">
-                    <div class="chart-header">
-                        <h2>Active Players Distribution</h2>
-                        <div class="chart-actions">
-                            <button id="players-refresh"><i class="fas fa-sync-alt"></i> Refresh</button>
-                        </div>
-                    </div>
-                    <div class="chart-body">
-                        <canvas id="activePlayersChart"></canvas>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <script src="script.js"></script>
-    <script src="debug-utils.js"></script>
+            </form>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2023 Octoparency - Financial Transparency Dashboard</p>
+    </footer>
+
+    <script src="app.js"></script>
 </body>
 </html>
