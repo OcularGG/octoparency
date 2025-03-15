@@ -1,57 +1,77 @@
-// Replace with your deployed Google Apps Script URL
-const apiUrl = 'https://script.google.com/macros/s/AKfycbwqtDif0ZKw4dfCrIN12L93XQwX9GeZPmC2nj72kbs-KFJpfHlqoQ2lp4iMzVsseCHZ/exec';
-
 // Global variables to store data
 let financialData = [];
 let chartInstances = {};
 
-// Fetch data from the API
-async function fetchData() {
+// Parse CSV data
+function parseCSV(csvText) {
+    const lines = csvText.split('\n');
+    const headers = lines[0].split(',').map(header => header.trim());
+    
+    // Find the index of the date column (first column)
+    const dateIndex = 0;
+    
+    const data = [];
+    
+    // Start from row 1 (skip header row)
+    for (let i = 1; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) continue; // Skip empty lines
+        
+        const values = line.split(',');
+        if (values.length <= 1) continue; // Skip lines with insufficient data
+        
+        const entry = {};
+        
+        // Add date from the first column
+        entry['Date'] = values[dateIndex] || '';
+        
+        // Map each header to its corresponding value
+        for (let j = 1; j < headers.length; j++) {
+            const header = headers[j].trim();
+            if (header) {
+                entry[header] = values[j] || '';
+            }
+        }
+        
+        data.push(entry);
+    }
+    
+    return data;
+}
+
+// Load data from the CSV file - make it globally accessible for debugging
+window.loadCSVData = async function() {
     try {
         // Show loading indicators
         document.querySelectorAll('.stat-value').forEach(el => {
             el.innerHTML = '<div class="loading-spinner"></div>';
         });
         
-        console.log('Fetching data from API...');
-        const response = await fetch(apiUrl);
+        console.log('Loading CSV data...');
+        const response = await fetch('Copy of OCULAR Accounting - Book Keeping.csv');
         
         if (!response.ok) {
             throw new Error(`HTTP error! Status: ${response.status}`);
         }
         
-        const data = await response.json();
-        console.log('Data received:', data);
+        const csvText = await response.text();
+        console.log('CSV data loaded, parsing...');
         
-        // Check if data is valid and has expected format
-        if (!Array.isArray(data)) {
-            throw new Error('Data is not an array. Received: ' + JSON.stringify(data).substring(0, 100) + '...');
-        }
+        const data = parseCSV(csvText);
+        console.log('Parsed data:', data);
         
         if (data.length === 0) {
-            throw new Error('Received empty data array');
+            throw new Error('No data found in CSV file');
         }
         
-        // Check if first item has expected properties
-        const sampleItem = data[0];
-        console.log('Sample data item:', sampleItem);
-        
-        const requiredProperties = [
-            'Date', 
-            'Guild Total Value (including illiquid assets)', 
-            'Total Liquid/Sellable Assets',
-            'Total Illiquid/Non-sell assets',
-            'Net Liquid Value',
-            'Amount Owed to Members (Bot)'
-        ];
-        
-        for (const prop of requiredProperties) {
-            if (!(prop in sampleItem)) {
-                throw new Error(`Data missing required property: ${prop}`);
+        // Process the data to ensure it has the right structure
+        financialData = data.map(item => {
+            // Add Date property from the first column if not already present
+            if (!item.Date && item['0']) {
+                item.Date = item['0'];
             }
-        }
-        
-        financialData = data;
+            return item;
+        });
         
         // Update stats cards
         updateStatsCards();
@@ -64,7 +84,7 @@ async function fetchData() {
         
         console.log('Data loaded successfully!');
     } catch (error) {
-        console.error('Error fetching data:', error);
+        console.error('Error loading data:', error);
         
         // Show error messages in stats cards
         document.querySelectorAll('.stat-value').forEach(el => {
@@ -80,7 +100,7 @@ async function fetchData() {
             <div class="error-content">
                 <h3>Error Loading Data</h3>
                 <p>${error.message}</p>
-                <button onclick="fetchData()">Try Again</button>
+                <button onclick="loadCSVData()">Try Again</button>
             </div>
         `;
         
@@ -125,8 +145,8 @@ function updateStatsCards() {
     
     try {
         // Update stat cards - with error handling for each value
-        document.getElementById('total-value').textContent = formatNumber(latestData['Guild Total Value (including illiquid assets)']);
-        document.getElementById('liquid-assets').textContent = formatNumber(latestData['Total Liquid/Sellable Assets']);
+        document.getElementById('total-value').textContent = formatNumber(latestData['Guild Total Value (including illiquid assets):']);
+        document.getElementById('liquid-assets').textContent = formatNumber(latestData['Total Liquid/Sellable Assets:']);
         document.getElementById('illiquid-assets').textContent = formatNumber(latestData['Total Illiquid/Non-sell assets']);
         document.getElementById('owed-members').textContent = formatNumber(latestData['Amount Owed to Members (Bot)']);
         
@@ -157,12 +177,11 @@ function createAllCharts() {
         
         // Process data for charts with safe parsing
         const dates = financialData.map(item => item.Date || '');
-        const guildTotalValue = financialData.map(item => safeParseFloat(item['Guild Total Value (including illiquid assets)']));
+        const guildTotalValue = financialData.map(item => safeParseFloat(item['Guild Total Value (including illiquid assets):']));
         const totalIlliquid = financialData.map(item => safeParseFloat(item['Total Illiquid/Non-sell assets']));
-        const totalLiquid = financialData.map(item => safeParseFloat(item['Total Liquid/Sellable Assets']));
+        const totalLiquid = financialData.map(item => safeParseFloat(item['Total Liquid/Sellable Assets:']));
         const netLiquidValue = financialData.map(item => safeParseFloat(item['Net Liquid Value']));
         const amountOwed = financialData.map(item => safeParseFloat(item['Amount Owed to Members (Bot)']));
-        const siphonedNet = financialData.map(item => safeParseFloat(item['Siphoned Net (Deposit - Withdraw)']));
         
         // Create Guild Total Value Chart
         const gtvCtx = document.getElementById('guildTotalValueChart');
@@ -300,27 +319,6 @@ function createAllCharts() {
             });
         }
         
-        // Create Siphoned Net Chart
-        const snCtx = document.getElementById('siphonedNetChart');
-        if (!snCtx) {
-            console.error('Canvas element siphonedNetChart not found');
-        } else {
-            chartInstances.siphonedNet = createLineChart(
-                'siphonedNetChart',
-                'Siphoned Net Value Over Time',
-                dates,
-                [
-                    {
-                        label: 'Siphoned Net Value',
-                        data: siphonedNet,
-                        borderColor: '#f56565',
-                        backgroundColor: 'rgba(245, 101, 101, 0.1)',
-                        tension: 0.4
-                    }
-                ]
-            );
-        }
-        
         // Create Active Players Chart if all required data exists
         try {
             const apCtx = document.getElementById('activePlayersChart');
@@ -426,43 +424,6 @@ function createLineChart(canvasId, title, labels, datasets) {
     }
 }
 
-// Filter data by time period
-function filterData(period) {
-    if (period === 'all') {
-        return financialData;
-    }
-    
-    if (!financialData || financialData.length === 0) {
-        console.warn('No data available to filter');
-        return [];
-    }
-    
-    const now = new Date();
-    let cutoffDate;
-    
-    switch(period) {
-        case 'monthly':
-            cutoffDate = new Date(now.setMonth(now.getMonth() - 1));
-            break;
-        case 'quarterly':
-            cutoffDate = new Date(now.setMonth(now.getMonth() - 3));
-            break;
-        default:
-            return financialData;
-    }
-    
-    return financialData.filter(item => {
-        try {
-            if (!item.Date) return false;
-            const itemDate = new Date(item.Date);
-            return !isNaN(itemDate.getTime()) && itemDate >= cutoffDate;
-        } catch (e) {
-            console.warn('Error processing date:', item.Date, e);
-            return false;
-        }
-    });
-}
-
 // Setup event listeners for chart filters
 function setupEventListeners() {
     try {
@@ -470,44 +431,16 @@ function setupEventListeners() {
         const gtvMonthly = document.getElementById('gtv-monthly');
         if (gtvMonthly) {
             gtvMonthly.addEventListener('click', () => {
-                updateChart('guildTotalValue', 'monthly');
+                // For the CSV data, we'll just use all the data
+                // since there aren't many records
+                console.log('Monthly filter clicked - using all available data');
             });
         }
         
         const gtvAll = document.getElementById('gtv-all');
         if (gtvAll) {
             gtvAll.addEventListener('click', () => {
-                updateChart('guildTotalValue', 'all');
-            });
-        }
-        
-        // Net Liquid Value chart filters
-        const nlvMonthly = document.getElementById('nlv-monthly');
-        if (nlvMonthly) {
-            nlvMonthly.addEventListener('click', () => {
-                updateChart('netLiquidValue', 'monthly');
-            });
-        }
-        
-        const nlvAll = document.getElementById('nlv-all');
-        if (nlvAll) {
-            nlvAll.addEventListener('click', () => {
-                updateChart('netLiquidValue', 'all');
-            });
-        }
-        
-        // Siphoned Net Value chart filters
-        const siphonQuarterly = document.getElementById('siphon-quarterly');
-        if (siphonQuarterly) {
-            siphonQuarterly.addEventListener('click', () => {
-                updateChart('siphonedNet', 'quarterly');
-            });
-        }
-        
-        const siphonAll = document.getElementById('siphon-all');
-        if (siphonAll) {
-            siphonAll.addEventListener('click', () => {
-                updateChart('siphonedNet', 'all');
+                console.log('All data filter clicked');
             });
         }
         
@@ -537,51 +470,6 @@ function setupEventListeners() {
     }
 }
 
-// Update chart with filtered data
-function updateChart(chartName, period) {
-    try {
-        if (!chartInstances[chartName]) {
-            console.warn(`Chart instance ${chartName} not found`);
-            return;
-        }
-        
-        const filteredData = filterData(period);
-        
-        // If no data after filtering, return
-        if (filteredData.length === 0) {
-            console.warn(`No data available for period ${period}`);
-            return;
-        }
-        
-        const dates = filteredData.map(item => item.Date || '');
-        
-        switch(chartName) {
-            case 'guildTotalValue':
-                const guildTotalValue = filteredData.map(item => safeParseFloat(item['Guild Total Value (including illiquid assets)']));
-                chartInstances.guildTotalValue.data.labels = dates;
-                chartInstances.guildTotalValue.data.datasets[0].data = guildTotalValue;
-                chartInstances.guildTotalValue.update();
-                break;
-                
-            case 'netLiquidValue':
-                const netLiquidValue = filteredData.map(item => safeParseFloat(item['Net Liquid Value']));
-                chartInstances.netLiquidValue.data.labels = dates;
-                chartInstances.netLiquidValue.data.datasets[0].data = netLiquidValue;
-                chartInstances.netLiquidValue.update();
-                break;
-                
-            case 'siphonedNet':
-                const siphonedNet = filteredData.map(item => safeParseFloat(item['Siphoned Net (Deposit - Withdraw)']));
-                chartInstances.siphonedNet.data.labels = dates;
-                chartInstances.siphonedNet.data.datasets[0].data = siphonedNet;
-                chartInstances.siphonedNet.update();
-                break;
-        }
-    } catch (error) {
-        console.error(`Error updating chart ${chartName}:`, error);
-    }
-}
-
 // Update asset distribution chart with latest data
 function updateAssetDistributionChart() {
     try {
@@ -597,7 +485,7 @@ function updateAssetDistributionChart() {
             return;
         }
         
-        const liquidAssets = safeParseFloat(latestData['Total Liquid/Sellable Assets']);
+        const liquidAssets = safeParseFloat(latestData['Total Liquid/Sellable Assets:']);
         const illiquidAssets = safeParseFloat(latestData['Total Illiquid/Non-sell assets']);
         
         chartInstances.liquidIlliquid.data.datasets[0].data = [liquidAssets, illiquidAssets];
@@ -729,7 +617,7 @@ function addDynamicStyles() {
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM loaded, initializing application...');
     addDynamicStyles();
-    fetchData();
+    window.loadCSVData(); // Use the global function
 });
 
 // Alternative initialization for older browsers
@@ -737,10 +625,10 @@ if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function() {
         console.log('DOM loaded (readyState handler), initializing application...');
         addDynamicStyles();
-        fetchData();
+        window.loadCSVData(); // Use the global function
     });
 } else {
     console.log('DOM already loaded, initializing application immediately...');
     addDynamicStyles();
-    fetchData();
+    window.loadCSVData(); // Use the global function
 }

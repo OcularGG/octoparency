@@ -1,7 +1,4 @@
-// Debug utilities to help troubleshoot API and chart issues
-
-// Add this to the main page by including:
-// <script src="debug-utils.js"></script>
+// Debug utilities to help troubleshoot CSV data loading and chart issues
 
 (function() {
     // Create debug panel
@@ -169,10 +166,10 @@
             logContainer.scrollTop = logContainer.scrollHeight;
         };
         
-        // Add API test button to the page
+        // Add CSV test button to the page
         const testBtn = document.createElement('button');
-        testBtn.id = 'api-test-btn';
-        testBtn.textContent = 'Test API';
+        testBtn.id = 'csv-test-btn';
+        testBtn.textContent = 'Test CSV Data';
         testBtn.style.cssText = `
             position: fixed;
             bottom: 10px;
@@ -188,32 +185,106 @@
         
         testBtn.onclick = async () => {
             panel.style.display = 'block';
-            console.log('Testing API connection...');
+            console.log('Testing CSV data loading...');
             
             try {
                 const startTime = performance.now();
-                const response = await fetch('https://script.google.com/macros/s/AKfycbwqtDif0ZKw4dfCrIN12L93XQwX9GeZPmC2nj72kbs-KFJpfHlqoQ2lp4iMzVsseCHZ/exec');
+                const response = await fetch('Copy of OCULAR Accounting - Book Keeping.csv');
                 const endTime = performance.now();
                 
                 if (!response.ok) {
                     throw new Error(`HTTP error! Status: ${response.status}`);
                 }
                 
-                const data = await response.json();
+                const csvText = await response.text();
                 const responseTime = (endTime - startTime).toFixed(2);
                 
-                console.log(`✅ API connection successful! Response time: ${responseTime}ms`);
-                console.log(`Received ${data.length} records`);
+                console.log(`✅ CSV data loaded successfully! Response time: ${responseTime}ms`);
+                console.log(`CSV data size: ${csvText.length} bytes`);
                 
-                if (Array.isArray(data) && data.length > 0) {
-                    console.log('Sample record:', data[0]);
+                // Parse first few lines to show sample data
+                const lines = csvText.split('\n');
+                console.log(`Headers: ${lines[0]}`);
+                if (lines.length > 1) {
+                    console.log(`First row: ${lines[1]}`);
+                }
+                
+                // Try parsing the CSV
+                try {
+                    const parsed = parseCSV(csvText);
+                    console.log(`Parsed ${parsed.length} rows from CSV`);
+                    if (parsed.length > 0) {
+                        console.log('Sample data (first row):', parsed[0]);
+                    }
+                } catch (parseError) {
+                    console.error('CSV parsing error:', parseError);
                 }
             } catch (error) {
-                console.error('API test failed:', error);
+                console.error('CSV data loading failed:', error);
             }
         };
         
+        function parseCSV(csvText) {
+            const lines = csvText.split('\n');
+            const headers = lines[0].split(',').map(header => header.trim());
+            
+            const data = [];
+            
+            for (let i = 1; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (!line) continue;
+                
+                const values = line.split(',');
+                if (values.length <= 1) continue;
+                
+                const entry = {};
+                
+                for (let j = 0; j < headers.length; j++) {
+                    const header = headers[j].trim();
+                    if (header) {
+                        entry[header] = values[j] || '';
+                    }
+                }
+                
+                data.push(entry);
+            }
+            
+            return data;
+        }
+        
         document.body.appendChild(testBtn);
+        
+        // Add a reload data button
+        const reloadBtn = document.createElement('button');
+        reloadBtn.id = 'reload-data-btn';
+        reloadBtn.textContent = 'Reload Data';
+        reloadBtn.style.cssText = `
+            position: fixed;
+            bottom: 10px;
+            right: 120px;
+            background: #48bb78;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            z-index: 9998;
+        `;
+        
+        reloadBtn.onclick = () => {
+            panel.style.display = 'block';
+            console.log('Triggering data reload...');
+            
+            // Call the global loadCSVData function if it exists
+            if (typeof window.loadCSVData === 'function') {
+                window.loadCSVData();
+                console.log('Data reload initiated');
+            } else {
+                console.error('loadCSVData function not found in global scope');
+            }
+        };
+        
+        document.body.appendChild(reloadBtn);
         
         console.log('Debug utilities loaded. Press Ctrl+Shift+D to toggle debug panel.');
     }

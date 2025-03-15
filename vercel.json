@@ -16,6 +16,10 @@
     {
       "src": "*.md",
       "use": "@vercel/static"
+    },
+    {
+      "src": "*.csv",
+      "use": "@vercel/static"
     }
   ],
   "routes": [
