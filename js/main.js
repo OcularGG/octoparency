@@ -90,6 +90,11 @@ function displayEvents(events) {
             </div>
         `;
         
+        // Add data-is-test attribute for test data styling
+        if (event.isTest) {
+            eventItem.dataset.isTest = "true";
+        }
+        
         deathsList.appendChild(eventItem);
     });
     
@@ -473,6 +478,8 @@ function loadTestEvents() {
 
     setTimeout(() => {
         const testEvents = window.testData.getTestEvents();
+		// Mark test events
+		testEvents.forEach(event => event.isTest = true);
         currentEvents = testEvents;
         displayEvents(testEvents);
         updateLastRefreshTime();
@@ -483,6 +490,8 @@ function loadTestEvents() {
 function showTestReceipt(index = 0) {
     const testEvents = window.testData.getTestEvents();
     if (testEvents && testEvents.length > 0) {
+		// Mark test events
+		testEvents.forEach(event => event.isTest = true);
         currentEvents = testEvents;
         currentEventIndex = index;
         showReceipt(index);
@@ -957,4 +966,50 @@ document.addEventListener('DOMContentLoaded', () => {
         indicator.textContent = 'PREVIEW ENVIRONMENT';
         document.body.appendChild(indicator);
     }
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+    const searchForm = document.getElementById('search-form');
+    const searchInput = document.getElementById('search-input');
+    const searchResults = document.getElementById('search-results');
+    
+    searchForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const query = searchInput.value.trim();
+        if (!query) return;
+        
+        searchResults.innerHTML = '<p>Searching...</p>';
+        
+        try {
+            const guilds = await searchGuild(query);
+            const alliances = await searchAlliance(query);
+            
+            if (guilds.length === 0 && alliances.length === 0) {
+                searchResults.innerHTML = '<p>No results found.</p>';
+                return;
+            }
+            
+            const resultsHtml = [];
+            
+            if (guilds.length > 0) {
+                resultsHtml.push('<h3>Guilds</h3><ul>');
+                guilds.forEach(guild => {
+                    resultsHtml.push(`<li>${guild.Name} (ID: ${guild.Id})</li>`);
+                });
+                resultsHtml.push('</ul>');
+            }
+            
+            if (alliances.length > 0) {
+                resultsHtml.push('<h3>Alliances</h3><ul>');
+                alliances.forEach(alliance => {
+                    resultsHtml.push(`<li>${alliance.Name} (ID: ${alliance.Id})</li>`);
+                });
+                resultsHtml.push('</ul>');
+            }
+            
+            searchResults.innerHTML = resultsHtml.join('');
+        } catch (error) {
+            searchResults.innerHTML = `<p>Error: ${error.message}</p>`;
+        }
+    });
 });

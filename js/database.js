@@ -434,3 +434,514 @@ window.db = {
     console.error('Exception testing Supabase connection:', error);
   }
 })();
+
+/**
+ * database.js - Enhanced Database Layer
+ * 
+ * Features:
+ * - Optimized IndexedDB operations
+ * - Transaction batching
+ * - Robust error handling
+ * - Auto migration for schema changes
+ */
+
+const DB_NAME = 'battletabDB';
+const DB_VERSION = 1;
+let db = null;
+let dbInitPromise = null;
+
+/**
+ * Initialize the database connection
+ * @returns {Promise<IDBDatabase>} Database connection promise
+ */
+function initDB() {
+    // Return existing promise if already initializing
+    if (dbInitPromise) return dbInitPromise;
+    
+    // Return existing connection if available
+    if (db) return Promise.resolve(db);
+    
+    dbInitPromise = new Promise((resolve, reject) => {
+        // Check if IndexedDB is available
+        if (!window.indexedDB) {
+            const error = new Error('IndexedDB is not supported in this browser');
+            console.error(error);
+            reject(error);
+            return;
+        }
+        
+        console.log('Initializing database...');
+        const request = indexedDB.open(DB_NAME, DB_VERSION);
+        
+        request.onerror = (event) => {
+            const error = new Error(`Database error: ${event.target.error}`);
+            console.error(error);
+            reject(error);
+        };
+        
+        request.onsuccess = (event) => {
+            db = event.target.result;
+            console.log('Database initialized successfully');
+            
+            // Handle connection errors
+            db.onerror = (event) => {
+                console.error(`Database error: ${event.target.error}`);
+            };
+            
+            resolve(db);
+        };
+        
+        // Handle database upgrades/migrations
+        request.onupgradeneeded = (event) => {
+            console.log(`Upgrading database from version ${event.oldVersion} to ${event.newVersion}`);
+            const database = event.target.result;
+            
+            // Create object stores if they don't exist
+            if (!database.objectStoreNames.contains('events')) {
+                const eventStore = database.createObjectStore('events', { keyPath: 'id' });
+                eventStore.createIndex('by_timestamp', 'TimeStamp', { unique: false });
+                eventStore.createIndex('by_eventType', 'eventType', { unique: false });
+                eventStore.createIndex('by_eventId', 'EventId', { unique: false });
+                console.log('Created events store');
+            }
+            
+            if (!database.objectStoreNames.contains('settings')) {
+                database.createObjectStore('settings', { keyPath: 'key' });
+                console.log('Created settings store');
+            }
+            
+            if (!database.objectStoreNames.contains('players')) {
+                const playerStore = database.createObjectStore('players', { keyPath: 'Id' });
+                playerStore.createIndex('by_name', 'Name', { unique: false });
+                playerStore.createIndex('by_guild', 'GuildId', { unique: false });
+                console.log('Created players store');
+            }
+        };
+    });
+    
+    // Clear promise reference when settled
+    dbInitPromise.finally(() => {
+        dbInitPromise = null;
+    });
+    
+    return dbInitPromise;
+}
+
+/**
+ * Store a batch of events in the database
+ * 
+ * @param {Array} events - Array of event objects
+ * @returns {Promise<boolean>} Success status
+ */
+async function storeEvents(events) {
+    if (!Array.isArray(events) || events.length === 0) {
+        console.warn('No events provided to store');
+        return false;
+    }
+    
+    try {
+        const database = await initDB();
+        
+        // Process events in batches to avoid UI freezing
+        const batchSize = 50;
+        const batches = [];
+        
+        for (let i = 0; i < events.length; i += batchSize) {
+            const batch = events.slice(i, i + batchSize);
+            batches.push(batch);
+        }
+        
+        // Process each batch sequentially
+        for (let i = 0; i < batches.length; i++) {
+            const batch = batches[i];
+            
+            await new Promise((resolve, reject) => {
+                const transaction = database.transaction(['events'], 'readwrite');
+                const store = transaction.objectStore('events');
+                
+                transaction.oncomplete = () => resolve();
+                transaction.onerror = (e) => reject(e.target.error);
+                
+                batch.forEach(event => {
+                    // Generate consistent ID if missing
+                    if (!event.id) {
+                        const idBase = event.EventId || event.eventId || `event-${Date.now()}`;
+                        event.id = `${idBase}-${Math.random().toString(36).substr(2, 9)}`;
+                    }
+                    
+                    // Add or update timestamp for indexing
+                    if (event.TimeStamp && typeof event.TimeStamp === 'string') {
+                        try {
+                            event._timestampMs = new Date(event.TimeStamp).getTime();
+                        } catch (e) {
+                            console.warn('Invalid timestamp format', event.TimeStamp);
+                        }
+                    }
+                    
+                    store.put(event);
+                });
+            });
+            
+            // Allow UI to breathe between batches
+            if (i < batches.length - 1) {
+                await new Promise(r => setTimeout(r, 0));
+            }
+        }
+        
+        console.log(`Stored ${events.length} events in database`);
+        return true;
+    } catch (error) {
+        console.error('Failed to store events:', error);
+        return false;
+    }
+}
+
+/**
+ * Get events from the database
+ * 
+ * @param {Object} options - Query options
+ * @param {number} options.limit - Maximum number of events to return
+ * @param {string} options.order - Sort order ('asc' or 'desc')
+ * @param {number} options.startTime - Filter events after this timestamp
+ * @param {number} options.endTime - Filter events before this timestamp
+ * @param {string} options.eventType - Filter by event type
+ * @returns {Promise<Array>} Array of events
+ */
+async function getEvents(options = {}) {
+    const limit = options.limit || 100;
+    const order = options.order || 'desc';
+    
+    try {
+        const database = await initDB();
+        
+        return new Promise((resolve, reject) => {
+            const transaction = database.transaction(['events'], 'readonly');
+            const store = transaction.objectStore('events');
+            const index = store.index('by_timestamp');
+            
+            let range = null;
+            if (options.startTime && options.endTime) {
+                range = IDBKeyRange.bound(options.startTime, options.endTime);
+            } else if (options.startTime) {
+                range = IDBKeyRange.lowerBound(options.startTime);
+            } else if (options.endTime) {
+                range = IDBKeyRange.upperBound(options.endTime);
+            }
+            
+            const direction = order === 'asc' ? 'next' : 'prev';
+            const request = index.openCursor(range, direction);
+            const results = [];
+            
+            request.onsuccess = (event) => {
+                const cursor = event.target.result;
+                if (cursor && results.length < limit) {
+                    const event = cursor.value;
+                    
+                    // Apply event type filter if specified
+                    if (!options.eventType || 
+                        event.eventType === options.eventType ||
+                        (event.EventType && event.EventType === options.eventType)) {
+                        results.push(cursor.value);
+                    }
+                    
+                    cursor.continue();
+                } else {
+                    resolve(results);
+                }
+            };
+            
+            request.onerror = (event) => {
+                console.error('Error reading events:', event.target.error);
+                reject(event.target.error);
+            };
+        });
+    } catch (error) {
+        console.error('Failed to get events:', error);
+        return [];
+    }
+}
+
+/**
+ * Count events in the database
+ * 
+ * @param {Object} options - Query options
+ * @returns {Promise<number>} Event count
+ */
+async function countEvents(options = {}) {
+    try {
+        const database = await initDB();
+        
+        return new Promise((resolve, reject) => {
+            const transaction = database.transaction(['events'], 'readonly');
+            const store = transaction.objectStore('events');
+            
+            const request = store.count();
+            
+            request.onsuccess = () => {
+                resolve(request.result);
+            };
+            
+            request.onerror = (event) => {
+                console.error('Error counting events:', event.target.error);
+                reject(event.target.error);
+            };
+        });
+    } catch (error) {
+        console.error('Failed to count events:', error);
+        return 0;
+    }
+}
+
+/**
+ * Clear all events from the database
+ * 
+ * @returns {Promise<boolean>} Success status
+ */
+async function clearEvents() {
+    try {
+        const database = await initDB();
+        
+        return new Promise((resolve, reject) => {
+            const transaction = database.transaction(['events'], 'readwrite');
+            const store = transaction.objectStore('events');
+            
+            const request = store.clear();
+            
+            request.onsuccess = () => {
+                console.log('All events cleared from database');
+                resolve(true);
+            };
+            
+            request.onerror = (event) => {
+                console.error('Error clearing events:', event.target.error);
+                reject(event.target.error);
+            };
+        });
+    } catch (error) {
+        console.error('Failed to clear events:', error);
+        return false;
+    }
+}
+
+/**
+ * Store player data in the database
+ * 
+ * @param {Object} player - Player object
+ * @returns {Promise<boolean>} Success status
+ */
+async function storePlayer(player) {
+    if (!player || !player.Id) {
+        console.warn('Invalid player data provided');
+        return false;
+    }
+    
+    try {
+        const database = await initDB();
+        
+        return new Promise((resolve, reject) => {
+            const transaction = database.transaction(['players'], 'readwrite');
+            const store = transaction.objectStore('players');
+            
+            const request = store.put(player);
+            
+            request.onsuccess = () => {
+                resolve(true);
+            };
+            
+            request.onerror = (event) => {
+                console.error('Error storing player:', event.target.error);
+                reject(event.target.error);
+            };
+        });
+    } catch (error) {
+        console.error('Failed to store player:', error);
+        return false;
+    }
+}
+
+/**
+ * Get a player from the database
+ * 
+ * @param {string} playerId - Player ID
+ * @returns {Promise<Object>} Player object or null
+ */
+async function getPlayer(playerId) {
+    try {
+        const database = await initDB();
+        
+        return new Promise((resolve, reject) => {
+            const transaction = database.transaction(['players'], 'readonly');
+            const store = transaction.objectStore('players');
+            
+            const request = store.get(playerId);
+            
+            request.onsuccess = () => {
+                resolve(request.result || null);
+            };
+            
+            request.onerror = (event) => {
+                console.error('Error getting player:', event.target.error);
+                reject(event.target.error);
+            };
+        });
+    } catch (error) {
+        console.error('Failed to get player:', error);
+        return null;
+    }
+}
+
+/**
+ * Save a setting to the database
+ * 
+ * @param {string} key - Setting key
+ * @param {any} value - Setting value
+ * @returns {Promise<boolean>} Success status
+ */
+async function saveSetting(key, value) {
+    if (!key) {
+        console.warn('No key provided for setting');
+        return false;
+    }
+    
+    try {
+        const database = await initDB();
+        
+        return new Promise((resolve, reject) => {
+            const transaction = database.transaction(['settings'], 'readwrite');
+            const store = transaction.objectStore('settings');
+            
+            const request = store.put({ key, value });
+            
+            request.onsuccess = () => {
+                resolve(true);
+            };
+            
+            request.onerror = (event) => {
+                console.error(`Error saving setting "${key}":`, event.target.error);
+                reject(event.target.error);
+            };
+        });
+    } catch (error) {
+        console.error('Failed to save setting:', error);
+        return false;
+    }
+}
+
+/**
+ * Get a setting from the database
+ * 
+ * @param {string} key - Setting key
+ * @param {any} defaultValue - Default value if setting not found
+ * @returns {Promise<any>} Setting value
+ */
+async function getSetting(key, defaultValue = null) {
+    if (!key) return defaultValue;
+    
+    try {
+        const database = await initDB();
+        
+        return new Promise((resolve, reject) => {
+            const transaction = database.transaction(['settings'], 'readonly');
+            const store = transaction.objectStore('settings');
+            
+            const request = store.get(key);
+            
+            request.onsuccess = () => {
+                const result = request.result;
+                resolve(result ? result.value : defaultValue);
+            };
+            
+            request.onerror = (event) => {
+                console.error(`Error getting setting "${key}":`, event.target.error);
+                resolve(defaultValue); // Return default on error
+            };
+        });
+    } catch (error) {
+        console.error('Failed to get setting:', error);
+        return defaultValue;
+    }
+}
+
+/**
+ * Get all settings from the database
+ * 
+ * @returns {Promise<Object>} All settings
+ */
+async function getAllSettings() {
+    try {
+        const database = await initDB();
+        
+        return new Promise((resolve, reject) => {
+            const transaction = database.transaction(['settings'], 'readonly');
+            const store = transaction.objectStore('settings');
+            
+            const request = store.getAll();
+            
+            request.onsuccess = () => {
+                const settings = {};
+                request.result.forEach(item => {
+                    settings[item.key] = item.value;
+                });
+                resolve(settings);
+            };
+            
+            request.onerror = (event) => {
+                console.error('Error getting all settings:', event.target.error);
+                reject(event.target.error);
+            };
+        });
+    } catch (error) {
+        console.error('Failed to get all settings:', error);
+        return {};
+    }
+}
+
+/**
+ * Delete a setting from the database
+ * 
+ * @param {string} key - Setting key
+ * @returns {Promise<boolean>} Success status
+ */
+async function deleteSetting(key) {
+    if (!key) return false;
+    
+    try {
+        const database = await initDB();
+        
+        return new Promise((resolve, reject) => {
+            const transaction = database.transaction(['settings'], 'readwrite');
+            const store = transaction.objectStore('settings');
+            
+            const request = store.delete(key);
+            
+            request.onsuccess = () => {
+                resolve(true);
+            };
+            
+            request.onerror = (event) => {
+                console.error(`Error deleting setting "${key}":`, event.target.error);
+                reject(event.target.error);
+            };
+        });
+    } catch (error) {
+        console.error('Failed to delete setting:', error);
+        return false;
+    }
+}
+
+// Initialize the database
+initDB().catch(error => {
+    console.error('Failed to initialize database:', error);
+});
+
+// Export functions
+window.storeEvents = storeEvents;
+window.getEvents = getEvents;
+window.countEvents = countEvents;
+window.clearEvents = clearEvents;
+window.storePlayer = storePlayer;
+window.getPlayer = getPlayer;
+window.saveSetting = saveSetting;
+window.getSetting = getSetting;
+window.getAllSettings = getAllSettings;
+window.deleteSetting = deleteSetting;
