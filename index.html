@@ -3,132 +3,160 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Octoparency - GitHub Transparency Dashboard</title>
+    <title>Octoparency - Financial Dashboard</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <div class="dashboard-container">
-        <!-- Sidebar Navigation -->
-        <aside class="sidebar">
+        <!-- Sidebar -->
+        <div class="sidebar">
             <div class="sidebar-header">
                 <h1>Octoparency</h1>
             </div>
             <nav class="sidebar-nav">
                 <ul>
-                    <li class="active"><i class="fas fa-chart-line"></i> Dashboard</li>
-                    <li><i class="fas fa-code-branch"></i> Repositories</li>
-                    <li><i class="fas fa-users"></i> Contributors</li>
-                    <li><i class="fas fa-cog"></i> Settings</li>
+                    <li class="active"><i class="fas fa-chart-line"></i> <span>Dashboard</span></li>
+                    <li><i class="fas fa-coins"></i> <span>Assets</span></li>
+                    <li><i class="fas fa-money-bill-wave"></i> <span>Liquid Value</span></li>
+                    <li><i class="fas fa-users"></i> <span>Members</span></li>
+                    <li><i class="fas fa-history"></i> <span>History</span></li>
+                    <li><i class="fas fa-cog"></i> <span>Settings</span></li>
                 </ul>
             </nav>
             <div class="sidebar-footer">
-                <p>GitHub Transparency Tool</p>
+                <p>© 2023 Octoparency</p>
             </div>
-        </aside>
+        </div>
 
         <!-- Main Content -->
-        <main class="main-content">
-            <header class="dashboard-header">
-                <h2>GitHub Analytics Dashboard</h2>
+        <div class="main-content">
+            <div class="dashboard-header">
+                <h1>Financial Dashboard</h1>
                 <div class="header-actions">
                     <div class="search-bar">
-                        <input type="text" placeholder="Search repositories...">
+                        <input type="text" placeholder="Search...">
                         <button><i class="fas fa-search"></i></button>
                     </div>
                     <div class="user-profile">
-                        <span>Welcome, User</span>
                         <i class="fas fa-user-circle"></i>
-                    </div>
-                </div>
-            </header>
-
-            <!-- Dashboard Overview Stats -->
-            <div class="stats-overview">
-                <div class="stat-card">
-                    <i class="fas fa-code-branch"></i>
-                    <div class="stat-info">
-                        <h3>Total Repos</h3>
-                        <p class="stat-value">124</p>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <i class="fas fa-users"></i>
-                    <div class="stat-info">
-                        <h3>Contributors</h3>
-                        <p class="stat-value">843</p>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <i class="fas fa-code"></i>
-                    <div class="stat-info">
-                        <h3>Commits</h3>
-                        <p class="stat-value">12,456</p>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <i class="fas fa-exclamation-circle"></i>
-                    <div class="stat-info">
-                        <h3>Issues</h3>
-                        <p class="stat-value">287</p>
+                        <span>Admin</span>
                     </div>
                 </div>
             </div>
 
-            <!-- Charts Grid -->
+            <!-- Stats Cards -->
+            <div class="stats-overview">
+                <div class="stat-card" id="total-value-card">
+                    <i class="fas fa-money-bill-alt"></i>
+                    <div class="stat-info">
+                        <h3>Total Value</h3>
+                        <div class="stat-value" id="total-value">Loading...</div>
+                    </div>
+                </div>
+                <div class="stat-card" id="liquid-assets-card">
+                    <i class="fas fa-coins"></i>
+                    <div class="stat-info">
+                        <h3>Liquid Assets</h3>
+                        <div class="stat-value" id="liquid-assets">Loading...</div>
+                    </div>
+                </div>
+                <div class="stat-card" id="illiquid-assets-card">
+                    <i class="fas fa-warehouse"></i>
+                    <div class="stat-info">
+                        <h3>Illiquid Assets</h3>
+                        <div class="stat-value" id="illiquid-assets">Loading...</div>
+                    </div>
+                </div>
+                <div class="stat-card" id="owed-members-card">
+                    <i class="fas fa-handshake"></i>
+                    <div class="stat-info">
+                        <h3>Owed to Members</h3>
+                        <div class="stat-value" id="owed-members">Loading...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts -->
             <div class="charts-grid">
                 <div class="chart-container">
                     <div class="chart-header">
-                        <h3>Commits Over Time</h3>
+                        <h2>Guild Total Value Over Time</h2>
                         <div class="chart-actions">
-                            <button class="btn-chart-action"><i class="fas fa-ellipsis-v"></i></button>
+                            <button id="gtv-monthly"><i class="fas fa-calendar-alt"></i> Monthly</button>
+                            <button id="gtv-all"><i class="fas fa-calendar"></i> All</button>
                         </div>
                     </div>
                     <div class="chart-body">
-                        <canvas id="commitsChart"></canvas>
+                        <canvas id="guildTotalValueChart"></canvas>
                     </div>
                 </div>
                 
                 <div class="chart-container">
                     <div class="chart-header">
-                        <h3>Language Distribution</h3>
+                        <h2>Asset Distribution</h2>
                         <div class="chart-actions">
-                            <button class="btn-chart-action"><i class="fas fa-ellipsis-v"></i></button>
+                            <button id="asset-refresh"><i class="fas fa-sync-alt"></i> Refresh</button>
                         </div>
                     </div>
                     <div class="chart-body">
-                        <canvas id="languageChart"></canvas>
+                        <canvas id="liquidIlliquidChart"></canvas>
                     </div>
                 </div>
                 
                 <div class="chart-container">
                     <div class="chart-header">
-                        <h3>Contributors Activity</h3>
+                        <h2>Net Liquid Value Trend</h2>
                         <div class="chart-actions">
-                            <button class="btn-chart-action"><i class="fas fa-ellipsis-v"></i></button>
+                            <button id="nlv-monthly"><i class="fas fa-calendar-alt"></i> Monthly</button>
+                            <button id="nlv-all"><i class="fas fa-calendar"></i> All</button>
                         </div>
                     </div>
                     <div class="chart-body">
-                        <canvas id="contributorsChart"></canvas>
+                        <canvas id="netLiquidValueChart"></canvas>
                     </div>
                 </div>
                 
                 <div class="chart-container">
                     <div class="chart-header">
-                        <h3>Issue Status</h3>
+                        <h2>Amount Owed By Category</h2>
                         <div class="chart-actions">
-                            <button class="btn-chart-action"><i class="fas fa-ellipsis-v"></i></button>
+                            <button id="owed-refresh"><i class="fas fa-sync-alt"></i> Refresh</button>
                         </div>
                     </div>
                     <div class="chart-body">
-                        <canvas id="issuesChart"></canvas>
+                        <canvas id="amountOwedChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="chart-container">
+                    <div class="chart-header">
+                        <h2>Siphoned Net Value Trend</h2>
+                        <div class="chart-actions">
+                            <button id="siphon-quarterly"><i class="fas fa-calendar-alt"></i> Quarterly</button>
+                            <button id="siphon-all"><i class="fas fa-calendar"></i> All</button>
+                        </div>
+                    </div>
+                    <div class="chart-body">
+                        <canvas id="siphonedNetChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="chart-container">
+                    <div class="chart-header">
+                        <h2>Active Players Distribution</h2>
+                        <div class="chart-actions">
+                            <button id="players-refresh"><i class="fas fa-sync-alt"></i> Refresh</button>
+                        </div>
+                    </div>
+                    <div class="chart-body">
+                        <canvas id="activePlayersChart"></canvas>
                     </div>
                 </div>
             </div>
-        </main>
+        </div>
     </div>
-
     <script src="script.js"></script>
 </body>
 </html>
