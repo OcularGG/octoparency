@@ -1,11 +1,13 @@
 # Usage Examples
 
-## Using Slash Commands (Recommended)
+## Using Prefix Commands (Recommended)
 
-After deploying your bot, you can use the following slash commands in your Discord server:
+After deploying your bot, you can use the following commands in your Discord server:
 
-- `/guildcheck message:[your message here]` - Send DMs to all members with the specified roles
-- `/guildchecktest message:[your message here]` - Send a test DM to a designated test user
+- `!guildcheck` - Send DMs to all members with the specified roles
+- `!guildchecktest` - Send a test DM to a designated test user
+
+These commands are only available to server administrators or users with "Manage Server" permission.
 
 ## Using API Endpoints (Alternative)
 
@@ -15,7 +17,7 @@ After deploying your bot, you can use the following slash commands in your Disco
 curl -X POST https://your-vercel-app.vercel.app/api/send-dm \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer eVw6h2JgR7nPkXfC9LqM4sT5bZyA8uQt3DxE1pKoWSaB" \
-  -d '{"roleId":"1336395193980817458","message":"Hello! This is an important announcement from the server team."}'
+  -d '{"roleId":"1336395193980817458"}'
 ```
 
 ### For Role ID: 1336395194995834971
@@ -24,20 +26,13 @@ curl -X POST https://your-vercel-app.vercel.app/api/send-dm \
 curl -X POST https://your-vercel-app.vercel.app/api/send-dm \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer eVw6h2JgR7nPkXfC9LqM4sT5bZyA8uQt3DxE1pKoWSaB" \
-  -d '{"roleId":"1336395194995834971","message":"Hello! This is an important announcement from the server team."}'
+  -d '{"roleId":"1336395194995834971"}'
 ```
 
 ### Check Job Status
 
 ```bash
 curl -X GET https://your-vercel-app.vercel.app/api/job-status \
-  -H "Authorization: Bearer eVw6h2JgR7nPkXfC9LqM4sT5bZyA8uQt3DxE1pKoWSaB"
-```
-
-### Register Slash Commands
-
-```bash
-curl -X POST https://your-vercel-app.vercel.app/api/register-commands \
   -H "Authorization: Bearer eVw6h2JgR7nPkXfC9LqM4sT5bZyA8uQt3DxE1pKoWSaB"
 ```
 
@@ -48,7 +43,7 @@ npm install
 npm start
 ```
 
-This will start the bot directly on your machine, which is useful for testing slash commands.
+This will start the bot directly on your machine, which is useful for testing the commands.
 
 ## Example Response for Sending DMs
 

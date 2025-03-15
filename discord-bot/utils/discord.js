@@ -1,41 +1,14 @@
-const { Client, GatewayIntentBits, REST, Routes, SlashCommandBuilder } = require('discord.js');
+const { Client, GatewayIntentBits } = require('discord.js');
 
 // Create a new client instance with necessary intents
 const client = new Client({ 
   intents: [
     GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMembers
+    GatewayIntentBits.GuildMembers,
+    GatewayIntentBits.MessageContent,
+    GatewayIntentBits.GuildMessages
   ] 
 });
-
-// Define slash commands
-const commands = [
-  new SlashCommandBuilder()
-    .setName('guildcheck')
-    .setDescription('Send DMs to all members with the specified roles'),
-  
-  new SlashCommandBuilder()
-    .setName('guildchecktest')
-    .setDescription('Send a test DM to a specific user')
-];
-
-// Register slash commands
-async function registerCommands() {
-  try {
-    console.log('Started refreshing application (/) commands.');
-    
-    const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_BOT_TOKEN);
-    
-    await rest.put(
-      Routes.applicationCommands(client.user.id),
-      { body: commands.map(command => command.toJSON()) }
-    );
-    
-    console.log('Successfully reloaded application (/) commands.');
-  } catch (error) {
-    console.error('Error registering slash commands:', error);
-  }
-}
 
 // Initialize the Discord client
 async function initializeDiscordClient() {
@@ -47,29 +20,34 @@ async function initializeDiscordClient() {
     client.once('ready', async () => {
       console.log(`Logged in as ${client.user.tag}`);
       
-      // Register slash commands when the bot starts
-      await registerCommands();
-      
-      // Setup interaction handler
-      setupInteractionHandler();
+      // Setup message handler for prefix commands
+      setupPrefixCommandHandler();
       
       resolve(client);
     });
   });
 }
 
-// Setup the interaction handler for slash commands
-function setupInteractionHandler() {
-  client.on('interactionCreate', async interaction => {
-    if (!interaction.isChatInputCommand()) return;
-
+// Setup the message handler for prefix commands
+function setupPrefixCommandHandler() {
+  client.on('messageCreate', async message => {
+    // Ignore messages from bots or messages that don't start with the prefix
+    if (message.author.bot || !message.content.startsWith('!')) return;
+    
+    // Get the command and arguments
+    const args = message.content.slice(1).trim().split(/ +/);
+    const command = args.shift().toLowerCase();
+    
     try {
-      if (interaction.commandName === 'guildcheck') {
+      if (command === 'guildcheck') {
+        // Check if user has permission (e.g., admin or manage server)
+        if (!message.member.permissions.has('ADMINISTRATOR') && 
+            !message.member.permissions.has('MANAGE_GUILD')) {
+          return await message.reply('You do not have permission to use this command.');
+        }
+        
         // Reply immediately to acknowledge the command
-        await interaction.reply({ 
-          content: 'Starting to send DMs to members with selected roles. This will take several hours to complete to avoid rate limits.',
-          ephemeral: true
-        });
+        await message.reply('Starting to send DMs to members with selected roles. This will take several hours to complete to avoid rate limits.');
         
         // The role IDs you specified
         const roleIds = ['1336395193980817458', '1336395194995834971'];
@@ -83,16 +61,16 @@ function setupInteractionHandler() {
         }
         
         // Send follow-up message
-        await interaction.followUp({ 
-          content: 'DM sending process has been initiated for all specified roles.',
-          ephemeral: true 
-        });
+        await message.channel.send('DM sending process has been initiated for all specified roles.');
       }
-      else if (interaction.commandName === 'guildchecktest') {
-        await interaction.reply({ 
-          content: 'Sending test DM to the specified user...',
-          ephemeral: true
-        });
+      else if (command === 'guildchecktest') {
+        // Check if user has permission
+        if (!message.member.permissions.has('ADMINISTRATOR') && 
+            !message.member.permissions.has('MANAGE_GUILD')) {
+          return await message.reply('You do not have permission to use this command.');
+        }
+        
+        await message.reply('Sending test DM to the specified user...');
         
         const testUserId = '1207434980855259206';
         
@@ -100,33 +78,15 @@ function setupInteractionHandler() {
         const result = await sendDMToTestUser(testUserId);
         
         if (result.success) {
-          await interaction.followUp({ 
-            content: `Test DM sent successfully to <@${testUserId}>!`,
-            ephemeral: true 
-          });
+          await message.channel.send(`Test DM sent successfully to <@${testUserId}>!`);
         } else {
-          await interaction.followUp({ 
-            content: `Failed to send test DM: ${result.error}`,
-            ephemeral: true 
-          });
+          await message.channel.send(`Failed to send test DM: ${result.error}`);
         }
       }
     } catch (error) {
-      console.error('Error handling slash command:', error);
+      console.error('Error handling prefix command:', error);
       try {
-        // If we haven't replied yet
-        if (!interaction.replied) {
-          await interaction.reply({ 
-            content: 'There was an error while executing this command!',
-            ephemeral: true 
-          });
-        } else {
-          // If we already replied, send a follow-up
-          await interaction.followUp({ 
-            content: 'There was an error while executing this command!',
-            ephemeral: true 
-          });
-        }
+        await message.channel.send('There was an error while executing this command!');
       } catch (followUpError) {
         console.error('Error sending error response:', followUpError);
       }

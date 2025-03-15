@@ -4,7 +4,7 @@ A Discord bot that sends DMs to all members with specific roles, distributed ove
 
 ## Features
 
-- Slash commands for easy interaction
+- Prefix commands (using `!`) for easy interaction
 - API endpoints for programmatic control
 - DMs distributed over 6 hours to avoid rate limits
 - Test mode to verify functionality
@@ -37,25 +37,26 @@ If you accidentally expose your Discord bot token:
    - Navigate to "Bot" tab
    - Under "Privileged Gateway Intents", enable:
      - SERVER MEMBERS INTENT (required to see members in the server)
-     - MESSAGE CONTENT INTENT (may be needed for some message operations)
+     - MESSAGE CONTENT INTENT (required to read command messages)
+     - GUILD MESSAGES INTENT (required to see messages in channels)
 
 2. **OAuth2 URL Generator**:
    - Navigate to "OAuth2" → "URL Generator"
    - Select the following scopes:
      - `bot`
-     - `applications.commands`
    - Select the following bot permissions:
      - "Send Messages"
-     - "Use Slash Commands"
      - "Read Messages/View Channels"
    - Use the generated URL to invite the bot to your server
 
-## Using Slash Commands
+## Using Prefix Commands
 
-After adding the bot to your server, you can use:
+After adding the bot to your server, you can use these commands:
 
-- `/guildcheck message:[your message]` - Send DMs to all members with roles 1336395193980817458 and 1336395194995834971
-- `/guildchecktest message:[your message]` - Send a test DM only to user 1207434980855259206
+- `!guildcheck` - Send DMs to all members with roles 1336395193980817458 and 1336395194995834971
+- `!guildchecktest` - Send a test DM only to user 1207434980855259206
+
+These commands can only be used by server administrators or users with the "Manage Server" permission.
 
 ## Using API Endpoints
 
