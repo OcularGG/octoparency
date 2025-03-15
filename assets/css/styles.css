@@ -35,6 +35,7 @@ body.dark-mode {
     align-items: center;
     height: 100vh;
     position: relative;
+    justify-content: space-between; /* Better distribution of space */
 }
 
 .sidebar::after {
@@ -50,15 +51,15 @@ body.dark-mode {
 .logo-container {
     width: 100%;
     text-align: center;
-    margin-bottom: 20px;
-    min-height: 100px; /* Reserve space for logo to prevent layout shifts */
+    margin-bottom: 5px; /* Reduced to make room for the title */
+    min-height: 120px; /* Increased to fit larger logo */
     display: flex;
     justify-content: center;
     align-items: center;
 }
 
 .logo {
-    width: 100px;
+    width: 130px; /* Increased logo size */
     transition: opacity 1.5s ease-in-out;
     opacity: 1;
 }
@@ -67,14 +68,33 @@ body.dark-mode {
     filter: none;
 }
 
+/* New title styling for OctoAuth */
+.site-title {
+    text-align: center;
+    font-size: 24px;
+    font-weight: bold;
+    margin: 0 0 20px 0;
+    background: linear-gradient(90deg, #0F52BA, #1E90FF);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    width: 100%;
+    padding: 0 10px;
+    letter-spacing: 0.5px;
+}
+
 .sidebar-nav {
     width: 100%;
     margin-top: 20px;
+    flex-grow: 1; /* Let nav take available space */
+    display: flex;
+    flex-direction: column;
 }
 
 .sidebar-nav ul {
     list-style-type: none;
     padding: 0;
+    flex-grow: 1; /* Let the nav list grow */
 }
 
 .sidebar-nav li {
@@ -505,8 +525,10 @@ body.dark-mode .toggle-icon::before {
 
 /* Social buttons container */
 .social-buttons-container {
-  margin-top: auto;
+  margin-top: 20px; /* Not auto anymore - specific value */
   margin-bottom: 20px;
+  padding-top: 15px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1); /* Subtle separator */
   display: flex;
   justify-content: center;
   align-items: center;
