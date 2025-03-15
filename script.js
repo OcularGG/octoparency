@@ -131,12 +131,22 @@ async function searchAlbionAPI(searchTerm) {
     try {
         const searchUrl = `${serverUrl}search?q=${encodeURIComponent(searchTerm)}`;
         console.log(`Searching URL: ${searchUrl}`);
+
+        // Log before the fetch
+        console.log('About to fetch...');
         const response = await fetch(searchUrl);
+
+        // Log after the fetch
+        console.log('Fetch completed.');
+
         if (!response.ok) {
+            console.error(`HTTP error! status: ${response.status}`);
             throw new Error(`HTTP error! status: ${response.status}`);
         }
+
         const rawData = await response.text();
         console.log('Raw API response:', rawData);
+
         let data;
         try {
             data = JSON.parse(rawData);
@@ -144,11 +154,12 @@ async function searchAlbionAPI(searchTerm) {
             console.error('JSON parse error:', e);
             throw new Error('Failed to parse API response');
         }
+
         console.log('Search results object:', data);
 
         resultsContainer.innerHTML = '<h2>Search Results</h2>';
         let resultsFound = false;
-        // Only process players
+
         if (data && data.players && Array.isArray(data.players) && data.players.length > 0) {
             resultsContainer.innerHTML += '<h3>Players</h3>';
             data.players.forEach(player => {
@@ -163,19 +174,20 @@ async function searchAlbionAPI(searchTerm) {
                 resultsContainer.appendChild(resultElement);
             });
         }
+
         if (!resultsFound) {
             resultsContainer.innerHTML += '<p>No player results found. Try a different search term or server.</p>';
         }
 
         saveSearchTermToLocalStorage(searchTerm);
     } catch (error) {
+        console.error('Search error:', error);
         resultsContainer.innerHTML = `
             <h2>Search Error</h2>
             <p>${error.message}</p>
             <p>Please try another search term or select a different server.</p>
             <p>Technical details: ${error.toString()}</p>
         `;
-        console.error('Search error:', error);
     }
 }
 
@@ -199,9 +211,15 @@ async function fetchKillmails(id, type) {
         const url = `${serverUrl}${endpoint}`;
         console.log(`Fetching from URL: ${url}`);
         
+        // Log before the fetch
+        console.log('About to fetch killmails...');
         const response = await fetch(url);
         
+        // Log after the fetch
+        console.log('Killmail fetch completed.');
+        
         if (!response.ok) {
+            console.error(`HTTP error! status: ${response.status}`);
             throw new Error(`HTTP error! status: ${response.status}`);
         }
         
@@ -289,6 +307,7 @@ async function fetchKillmails(id, type) {
             killmailsContainer.innerHTML = 'No killmails found for this selection.';
         }
     } catch (error) {
+        console.error('Killmail fetch error:', error);
         killmailsContainer.innerHTML = `
             <div class="error-message">
                 <h3>Error Fetching Killmails</h3>
@@ -296,7 +315,6 @@ async function fetchKillmails(id, type) {
                 <p>Try selecting a different server or search term.</p>
             </div>
         `;
-        console.error('Killmail fetch error:', error);
     }
 }
 
