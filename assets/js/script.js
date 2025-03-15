@@ -95,4 +95,13 @@ document.addEventListener('DOMContentLoaded', () => {
     loginButton.addEventListener('click', () => {
         alert('Login functionality would be implemented here');
     });
+
+    // Add event listeners to social buttons to ensure they're working
+    document.querySelectorAll('.social-button a').forEach(button => {
+        button.addEventListener('click', function(e) {
+            // This will stop the button from doing anything if you just want to test
+            // e.preventDefault();
+            console.log('Button clicked:', this.getAttribute('aria-label'));
+        });
+    });
 });
