@@ -443,24 +443,90 @@ async function initDashboard() {
     populateTable(data);
 }
 
-// Event listeners
+// Event listeners - FIX LOGIN MODAL ISSUE
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize elements that might not be available immediately
+    const loginButton = document.getElementById('admin-login-btn');
+    const logoutButton = document.getElementById('logout-btn');
+    const loginModal = document.getElementById('login-modal');
+    const loginForm = document.getElementById('login-form');
+    const closeModalButton = document.querySelector('.close');
+    
+    // Login button event listener
+    if (loginButton) {
+        loginButton.addEventListener('click', function() {
+            if (loginModal) {
+                loginModal.style.display = 'block';
+                const usernameInput = document.getElementById('username');
+                if (usernameInput) usernameInput.focus();
+            } else {
+                console.error("Login modal element not found!");
+            }
+        });
+    }
+    
+    // Close button event listener
+    if (closeModalButton) {
+        closeModalButton.addEventListener('click', function() {
+            if (loginModal) {
+                loginModal.style.display = 'none';
+                if (loginForm) loginForm.reset();
+            }
+        });
+    }
+    
+    // Click outside modal to close
+    window.addEventListener('click', function(event) {
+        if (event.target == loginModal) {
+            loginModal.style.display = 'none';
+            if (loginForm) loginForm.reset();
+        }
+    });
+    
+    // Login form submission
+    if (loginForm) {
+        loginForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            if (validateLogin(username, password)) {
+                loginModal.style.display = 'none';
+                loginForm.reset();
+                setAdminMode(true);
+            } else {
+                alert('Invalid username or password');
+            }
+        });
+    }
+    
+    // Logout button
+    if (logoutButton) {
+        logoutButton.addEventListener('click', function() {
+            setAdminMode(false);
+        });
+    }
+    
+    // Initialize the dashboard
+    initDashboard();
+});
+
+// Remove the existing event listeners from the end of the file
+// (keep all other functions intact, but remove these specific event listeners
+// since we're now setting them up in the DOMContentLoaded event)
+
+/*
 refreshButton.addEventListener('click', initDashboard);
-
 loginButton.addEventListener('click', showLoginModal);
-
 logoutButton.addEventListener('click', function() {
     setAdminMode(false);
 });
-
 closeModalButton.addEventListener('click', hideLoginModal);
-
-// Close modal when clicking outside the content
 window.addEventListener('click', function(event) {
     if (event.target == loginModal) {
         hideLoginModal();
     }
 });
-
 loginForm.addEventListener('submit', function(e) {
     e.preventDefault();
     const username = document.getElementById('username').value;
@@ -473,6 +539,10 @@ loginForm.addEventListener('submit', function(e) {
         alert('Invalid username or password');
     }
 });
+*/
+
+// Keep the refreshButton, calculateButton and financialForm listeners
+refreshButton.addEventListener('click', initDashboard);
 
 calculateButton.addEventListener('click', function() {
     if (!currentData) currentData = {};
