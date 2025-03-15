@@ -502,3 +502,171 @@ body.dark-mode .toggle-icon::before {
     transform: translateX(26px) rotate(360deg);
   }
 }
+
+/* Social buttons container */
+.social-buttons-container {
+  margin-top: auto;
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 15px; /* Space between social buttons */
+  flex-wrap: wrap; /* Allow buttons to wrap on smaller screens */
+  max-width: 100%; /* Ensure it doesn't overflow the sidebar */
+}
+
+.social-button {
+  position: relative;
+}
+
+/* Common button styles (refactored to avoid duplication) */
+.Btn {
+  width: 45px;
+  height: 45px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background-color: transparent;
+  position: relative;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.svgContainer {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: transparent;
+  backdrop-filter: blur(0px);
+  letter-spacing: 0.8px;
+  border-radius: 10px;
+  transition: all 0.3s;
+  border: 1px solid rgba(156, 156, 156, 0.466);
+}
+
+.BG {
+  position: absolute;
+  content: "";
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  border-radius: 10px;
+  pointer-events: none;
+  transition: all 0.3s;
+}
+
+.Btn:hover .BG {
+  transform: rotate(35deg);
+  transform-origin: bottom;
+}
+
+.Btn:hover .svgContainer {
+  border: 1px solid rgba(206, 206, 206, 0.466);
+  background-color: rgba(214, 214, 214, 0.466);
+  backdrop-filter: blur(4px);
+}
+
+/* YouTube specific styles */
+.youtube-bg {
+  background: #ff0000;
+}
+
+.youtube-button-container:hover::after {
+  content: "Visit our YouTube channel";
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 5px;
+  padding: 5px 10px;
+  background-color: rgba(0, 0, 0, 0.8);
+  color: white;
+  border-radius: 4px;
+  font-size: 12px;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+/* Discord specific styles */
+.discord-bg {
+  background: #7289da;
+}
+
+.discord-button-container:hover::after {
+  content: "Join our Discord server";
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 5px;
+  padding: 5px 10px;
+  background-color: rgba(0, 0, 0, 0.8);
+  color: white;
+  border-radius: 4px;
+  font-size: 12px;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+/* Reddit specific styles */
+.reddit-bg {
+  background: #ff5700;
+}
+
+.reddit-button-container:hover::after {
+  content: "Follow us on Reddit";
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 5px;
+  padding: 5px 10px;
+  background-color: rgba(0, 0, 0, 0.8);
+  color: white;
+  border-radius: 4px;
+  font-size: 12px;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+/* GitHub specific styles */
+.github-bg {
+  background: #181818;
+}
+
+.github-button-container:hover::after {
+  content: "View our GitHub repository";
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 5px;
+  padding: 5px 10px;
+  background-color: rgba(0, 0, 0, 0.8);
+  color: white;
+  border-radius: 4px;
+  font-size: 12px;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+/* Responsive adjustments for social buttons */
+@media (max-width: 320px) {
+  .social-buttons-container {
+    gap: 10px;
+  }
+  
+  .Btn {
+    width: 40px;
+    height: 40px;
+  }
+}
+
+/* Remove the old YouTube button container styles that are now redundant */
+.youtube-button-container {
+  /* these styles are now in .social-button */
+}
