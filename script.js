@@ -2,76 +2,83 @@
 let financialData = [];
 let chartInstances = {};
 
-// Parse CSV data
-function parseCSV(csvText) {
-    const lines = csvText.split('\n');
-    const headers = lines[0].split(',').map(header => header.trim());
-    
-    // Find the index of the date column (first column)
-    const dateIndex = 0;
-    
-    const data = [];
-    
-    // Start from row 1 (skip header row)
-    for (let i = 1; i < lines.length; i++) {
-        const line = lines[i].trim();
-        if (!line) continue; // Skip empty lines
+// Parse XLSX data using SheetJS
+function parseXLSX(data) {
+    try {
+        // Parse the workbook
+        const workbook = XLSX.read(data, { type: 'array' });
         
-        const values = line.split(',');
-        if (values.length <= 1) continue; // Skip lines with insufficient data
+        // Get the first worksheet
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
         
-        const entry = {};
+        // Convert to JSON
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
         
-        // Add date from the first column
-        entry['Date'] = values[dateIndex] || '';
+        // Get headers from first row
+        const headers = jsonData[0].map(header => String(header).trim());
         
-        // Map each header to its corresponding value
-        for (let j = 1; j < headers.length; j++) {
-            const header = headers[j].trim();
-            if (header) {
-                entry[header] = values[j] || '';
+        // Process the data
+        const processedData = [];
+        
+        // Start from row 1 (skip header row)
+        for (let i = 1; i < jsonData.length; i++) {
+            const row = jsonData[i];
+            if (row.length <= 1) continue; // Skip empty rows
+            
+            const entry = {};
+            
+            // Add date from the first column
+            entry['Date'] = row[0] ? String(row[0]) : '';
+            
+            // Map each header to its corresponding value
+            for (let j = 1; j < headers.length; j++) {
+                const header = headers[j];
+                if (header) {
+                    entry[header] = row[j] !== undefined ? String(row[j]) : '';
+                }
+            }
+            
+            // Only include rows with a date
+            if (entry['Date']) {
+                processedData.push(entry);
             }
         }
         
-        data.push(entry);
+        return processedData;
+    } catch (error) {
+        console.error('Error parsing XLSX data:', error);
+        throw new Error('Failed to parse Excel file: ' + error.message);
     }
-    
-    return data;
 }
 
-// Load data from the CSV file - make it globally accessible for debugging
-window.loadCSVData = async function() {
+// Load data from the XLSX file - make it globally accessible for debugging
+window.loadXLSXData = async function() {
     try {
         // Show loading indicators
         document.querySelectorAll('.stat-value').forEach(el => {
             el.innerHTML = '<div class="loading-spinner"></div>';
         });
         
-        console.log('Loading CSV data...');
-        const response = await fetch('Copy of OCULAR Accounting - Book Keeping.csv');
+        console.log('Loading XLSX data...');
+        const response = await fetch('OCULAR Accounting - Book Keeping.xlsx');
         
         if (!response.ok) {
             throw new Error(`HTTP error! Status: ${response.status}`);
         }
         
-        const csvText = await response.text();
-        console.log('CSV data loaded, parsing...');
+        // Get the file as ArrayBuffer
+        const arrayBuffer = await response.arrayBuffer();
+        console.log('XLSX data loaded, parsing...');
         
-        const data = parseCSV(csvText);
+        const data = parseXLSX(arrayBuffer);
         console.log('Parsed data:', data);
         
         if (data.length === 0) {
-            throw new Error('No data found in CSV file');
+            throw new Error('No data found in Excel file');
         }
         
-        // Process the data to ensure it has the right structure
-        financialData = data.map(item => {
-            // Add Date property from the first column if not already present
-            if (!item.Date && item['0']) {
-                item.Date = item['0'];
-            }
-            return item;
-        });
+        financialData = data;
         
         // Update stats cards
         updateStatsCards();
@@ -100,7 +107,7 @@ window.loadCSVData = async function() {
             <div class="error-content">
                 <h3>Error Loading Data</h3>
                 <p>${error.message}</p>
-                <button onclick="loadCSVData()">Try Again</button>
+                <button onclick="loadXLSXData()">Try Again</button>
             </div>
         `;
         
@@ -617,7 +624,7 @@ function addDynamicStyles() {
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM loaded, initializing application...');
     addDynamicStyles();
-    window.loadCSVData(); // Use the global function
+    window.loadXLSXData(); // Use the global function to load XLSX instead
 });
 
 // Alternative initialization for older browsers
@@ -625,10 +632,10 @@ if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function() {
         console.log('DOM loaded (readyState handler), initializing application...');
         addDynamicStyles();
-        window.loadCSVData(); // Use the global function
+        window.loadXLSXData(); // Use the global function to load XLSX instead
     });
 } else {
     console.log('DOM already loaded, initializing application immediately...');
     addDynamicStyles();
-    window.loadCSVData(); // Use the global function
+    window.loadXLSXData(); // Use the global function to load XLSX instead
 }

@@ -20,6 +20,10 @@
     {
       "src": "*.csv",
       "use": "@vercel/static"
+    },
+    {
+      "src": "*.xlsx",
+      "use": "@vercel/static"
     }
   ],
   "routes": [

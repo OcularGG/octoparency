@@ -1,4 +1,4 @@
-// Debug utilities to help troubleshoot CSV data loading and chart issues
+// Debug utilities to help troubleshoot XLSX data loading and chart issues
 
 (function() {
     // Create debug panel
@@ -166,10 +166,10 @@
             logContainer.scrollTop = logContainer.scrollHeight;
         };
         
-        // Add CSV test button to the page
+        // Add XLSX test button to the page
         const testBtn = document.createElement('button');
-        testBtn.id = 'csv-test-btn';
-        testBtn.textContent = 'Test CSV Data';
+        testBtn.id = 'xlsx-test-btn';
+        testBtn.textContent = 'Test XLSX Data';
         testBtn.style.cssText = `
             position: fixed;
             bottom: 10px;
@@ -185,72 +185,66 @@
         
         testBtn.onclick = async () => {
             panel.style.display = 'block';
-            console.log('Testing CSV data loading...');
+            console.log('Testing XLSX data loading...');
             
             try {
                 const startTime = performance.now();
-                const response = await fetch('Copy of OCULAR Accounting - Book Keeping.csv');
+                const response = await fetch('OCULAR Accounting - Book Keeping.xlsx');
                 const endTime = performance.now();
                 
                 if (!response.ok) {
                     throw new Error(`HTTP error! Status: ${response.status}`);
                 }
                 
-                const csvText = await response.text();
+                const arrayBuffer = await response.arrayBuffer();
                 const responseTime = (endTime - startTime).toFixed(2);
                 
-                console.log(`✅ CSV data loaded successfully! Response time: ${responseTime}ms`);
-                console.log(`CSV data size: ${csvText.length} bytes`);
+                console.log(`✅ XLSX data loaded successfully! Response time: ${responseTime}ms`);
+                console.log(`XLSX data size: ${arrayBuffer.byteLength} bytes`);
                 
-                // Parse first few lines to show sample data
-                const lines = csvText.split('\n');
-                console.log(`Headers: ${lines[0]}`);
-                if (lines.length > 1) {
-                    console.log(`First row: ${lines[1]}`);
-                }
-                
-                // Try parsing the CSV
+                // Try parsing the XLSX using SheetJS
                 try {
-                    const parsed = parseCSV(csvText);
-                    console.log(`Parsed ${parsed.length} rows from CSV`);
-                    if (parsed.length > 0) {
-                        console.log('Sample data (first row):', parsed[0]);
+                    if (typeof XLSX === 'undefined') {
+                        throw new Error('XLSX library not loaded. Make sure you included the SheetJS library in your HTML.');
+                    }
+                    
+                    // Parse the workbook
+                    const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+                    console.log('Workbook loaded:', workbook.SheetNames);
+                    
+                    // Get the first worksheet
+                    const sheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[sheetName];
+                    
+                    // Convert to JSON to inspect first few rows
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
+                    console.log(`Worksheet "${sheetName}" has ${jsonData.length} rows`);
+                    
+                    if (jsonData.length > 0) {
+                        console.log('Headers:', jsonData[0]);
+                    }
+                    
+                    if (jsonData.length > 1) {
+                        console.log('First data row:', jsonData[1]);
+                    }
+                    
+                    // Try parsing with our custom parser
+                    if (typeof parseXLSX === 'function') {
+                        const parsed = parseXLSX(arrayBuffer);
+                        console.log(`Parsed ${parsed.length} rows from XLSX`);
+                        if (parsed.length > 0) {
+                            console.log('Sample data (first row):', parsed[0]);
+                        }
+                    } else {
+                        console.warn('parseXLSX function not available in global scope');
                     }
                 } catch (parseError) {
-                    console.error('CSV parsing error:', parseError);
+                    console.error('XLSX parsing error:', parseError);
                 }
             } catch (error) {
-                console.error('CSV data loading failed:', error);
+                console.error('XLSX data loading failed:', error);
             }
         };
-        
-        function parseCSV(csvText) {
-            const lines = csvText.split('\n');
-            const headers = lines[0].split(',').map(header => header.trim());
-            
-            const data = [];
-            
-            for (let i = 1; i < lines.length; i++) {
-                const line = lines[i].trim();
-                if (!line) continue;
-                
-                const values = line.split(',');
-                if (values.length <= 1) continue;
-                
-                const entry = {};
-                
-                for (let j = 0; j < headers.length; j++) {
-                    const header = headers[j].trim();
-                    if (header) {
-                        entry[header] = values[j] || '';
-                    }
-                }
-                
-                data.push(entry);
-            }
-            
-            return data;
-        }
         
         document.body.appendChild(testBtn);
         
@@ -275,12 +269,12 @@
             panel.style.display = 'block';
             console.log('Triggering data reload...');
             
-            // Call the global loadCSVData function if it exists
-            if (typeof window.loadCSVData === 'function') {
-                window.loadCSVData();
+            // Call the global loadXLSXData function if it exists
+            if (typeof window.loadXLSXData === 'function') {
+                window.loadXLSXData();
                 console.log('Data reload initiated');
             } else {
-                console.error('loadCSVData function not found in global scope');
+                console.error('loadXLSXData function not found in global scope');
             }
         };
         
