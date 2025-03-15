@@ -36,6 +36,29 @@ curl -X GET https://your-vercel-app.vercel.app/api/job-status \
   -H "Authorization: Bearer eVw6h2JgR7nPkXfC9LqM4sT5bZyA8uQt3DxE1pKoWSaB"
 ```
 
+### Check Bot Status
+
+To check if your bot is online and functioning:
+
+```bash
+curl https://your-vercel-app.vercel.app/api/status
+```
+
+Example response:
+
+```json
+{
+  "success": true,
+  "timestamp": "2023-06-07T18:30:38.123Z",
+  "bot": {
+    "online": true,
+    "username": "YourBot#1234",
+    "uptime": "3600 seconds"
+  },
+  "servers": 1
+}
+```
+
 ## Running the Bot Locally
 
 ```bash

@@ -1,5 +1,9 @@
 const { Client, GatewayIntentBits, Events } = require('discord.js');
 
+// Keep track of initialization status
+let isInitializing = false;
+let initializationPromise = null;
+
 // Create a new client instance with necessary intents
 const client = new Client({ 
   intents: [
@@ -15,8 +19,12 @@ client.on(Events.Error, error => {
   console.error('Discord client error:', error);
 });
 
+// More detailed debugging
 client.on(Events.Debug, info => {
-  console.log('Debug:', info);
+  // Only log in development environment to avoid excessive logs in production
+  if (process.env.NODE_ENV === 'development') {
+    console.log('Debug:', info);
+  }
 });
 
 client.on(Events.Warn, warning => {
@@ -25,9 +33,23 @@ client.on(Events.Warn, warning => {
 
 // Initialize the Discord client
 async function initializeDiscordClient() {
-  return new Promise((resolve, reject) => {
+  // If already initializing, return the existing promise
+  if (isInitializing && initializationPromise) {
+    return initializationPromise;
+  }
+  
+  // If already initialized and ready, return resolved promise
+  if (client.isReady()) {
+    return Promise.resolve(client);
+  }
+  
+  console.log('Starting Discord client initialization...');
+  isInitializing = true;
+  
+  initializationPromise = new Promise((resolve, reject) => {
     // Add timeout to prevent infinite hanging
     const timeout = setTimeout(() => {
+      isInitializing = false;
       reject(new Error('Connection timed out after 30 seconds'));
     }, 30000);
     
@@ -38,6 +60,8 @@ async function initializeDiscordClient() {
       })
       .catch(err => {
         clearTimeout(timeout);
+        isInitializing = false;
+        console.error('Login error:', err);
         reject(err);
       });
 
@@ -51,18 +75,28 @@ async function initializeDiscordClient() {
           console.warn(`Bot is not in the specified server (ID: ${process.env.DISCORD_SERVER_ID}). Please invite the bot to this server.`);
         } else {
           console.log(`Connected to server: ${guild.name}`);
+          
+          // Log the roles available
+          console.log('Available roles:');
+          guild.roles.cache.forEach(role => {
+            console.log(`- ${role.name} (${role.id})`);
+          });
         }
         
         // Setup message handler for prefix commands
         setupPrefixCommandHandler();
         
+        isInitializing = false;
         resolve(client);
       } catch (err) {
         console.error('Error during initialization:', err);
+        isInitializing = false;
         reject(err);
       }
     });
   });
+  
+  return initializationPromise;
 }
 
 // Setup the message handler for prefix commands

@@ -10,5 +10,15 @@
     "DISCORD_BOT_TOKEN": "@discord_bot_token",
     "DISCORD_SERVER_ID": "@discord_server_id",
     "API_SECRET_KEY": "@api_secret_key"
-  }
+  },
+  "regions": ["iad1"],
+  "github": {
+    "silent": true
+  },
+  "crons": [
+    {
+      "path": "/api/keep-alive",
+      "schedule": "*/5 * * * *"
+    }
+  ]
 }
