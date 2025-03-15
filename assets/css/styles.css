@@ -7,7 +7,8 @@ body {
 
 /* Light mode (default) */
 :root {
-    --sidebar-bg-gradient: linear-gradient(180deg, #0F52BA, #1E90FF);
+    --sidebar-bg-color: #333333; /* Grey color for sidebar */
+    --sidebar-border-gradient: linear-gradient(to right, #0F52BA, #1E90FF); /* Gradient line */
     --main-bg-color: #f0f0f0;
     --text-color: #333333;
     --btn-color: #0F52BA;
@@ -16,7 +17,8 @@ body {
 
 /* Dark mode */
 body.dark-mode {
-    --sidebar-bg-gradient: linear-gradient(180deg, #0a2f68, #0d4c8b);
+    --sidebar-bg-color: #222222; /* Darker grey for dark mode */
+    --sidebar-border-gradient: linear-gradient(to right, #0a2f68, #0d4c8b); /* Darker gradient line */
     --main-bg-color: #222222;
     --text-color: #ffffff;
     --btn-color: #1E90FF;
@@ -25,24 +27,38 @@ body.dark-mode {
 
 .sidebar {
     width: 250px;
-    background: var(--sidebar-bg-gradient);
+    background-color: var(--sidebar-bg-color);
     color: white;
     padding: 20px;
     display: flex;
     flex-direction: column;
     align-items: center;
     height: 100vh;
+    position: relative;
+}
+
+.sidebar::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 5px; /* Width of the gradient line */
+    height: 100%;
+    background: var(--sidebar-border-gradient);
 }
 
 .logo-container {
     width: 100%;
     text-align: center;
     margin-bottom: 20px;
+    min-height: 100px; /* Reserve space for logo to prevent layout shifts */
+    position: relative;
 }
 
 .logo {
     width: 100px;
-    transition: filter 0.3s;
+    transition: filter 0.3s, opacity 1.5s ease-in-out;
+    will-change: opacity; /* Performance hint for browsers */
 }
 
 .logo:hover {
