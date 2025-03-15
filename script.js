@@ -130,65 +130,97 @@ async function searchAlbionAPI(searchTerm) {
     killmailsContainer.innerHTML = '';
 
     try {
-        // Log the search request
-        console.log(`Searching for: ${searchTerm} on ${serverUrl}`);
+        // Log the search request with full URL for debugging
+        const searchUrl = `${serverUrl}search?q=${encodeURIComponent(searchTerm)}`;
+        console.log(`Searching URL: ${searchUrl}`);
         
-        // Use fetch with explicit headers and CORS mode
-        const response = await fetch(`${serverUrl}search?q=${encodeURIComponent(searchTerm)}`, {
-            method: 'GET',
-            headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json'
-            },
-            mode: 'cors'
-        });
+        // Direct fetch without extra options first to test if API is responding
+        const response = await fetch(searchUrl);
         
         // Check if response is ok
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
         
-        const data = await response.json();
-        console.log('Search results:', data);
+        // Log the raw response for debugging
+        const rawData = await response.text();
+        console.log('Raw API response:', rawData);
+        
+        // Try to parse the JSON
+        let data;
+        try {
+            data = JSON.parse(rawData);
+        } catch (e) {
+            console.error('JSON parse error:', e);
+            throw new Error('Failed to parse API response');
+        }
+        
+        console.log('Search results object:', data);
 
         resultsContainer.innerHTML = '<h2>Search Results</h2>';
+        let resultsFound = false;
         
-        if (data && data.players && data.players.length > 0) {
-            resultsContainer.innerHTML += '<h3>Players</h3>';
-            data.players.forEach(player => {
+        // Handle different API response formats
+        if (Array.isArray(data)) {
+            // Format 1: Array of results
+            resultsContainer.innerHTML += '<h3>Results</h3>';
+            data.forEach(item => {
+                resultsFound = true;
                 const resultElement = document.createElement('div');
                 resultElement.className = 'search-result';
-                resultElement.textContent = `${player.Name} (Player)`;
+                resultElement.textContent = `${item.Name} (${item.Type})`;
                 resultElement.addEventListener('click', () => {
-                    console.log(`Fetching killmails for player: ${player.Id}`);
-                    fetchKillmails(player.Id, 'player');
+                    console.log(`Fetching data for: ${item.Id} (${item.Type})`);
+                    fetchKillmails(item.Id, item.Type.toLowerCase());
                 });
                 resultsContainer.appendChild(resultElement);
             });
-        }
-        
-        if (data && data.guilds && data.guilds.length > 0) {
-            resultsContainer.innerHTML += '<h3>Guilds</h3>';
-            data.guilds.forEach(guild => {
-                const resultElement = document.createElement('div');
-                resultElement.className = 'search-result';
-                resultElement.textContent = `${guild.Name} (Guild)`;
-                resultElement.addEventListener('click', () => {
-                    console.log(`Fetching killmails for guild: ${guild.Id}`);
-                    fetchKillmails(guild.Id, 'guild');
+        } else if (data && typeof data === 'object') {
+            // Format 2: Object with categories
+            if (data.players && data.players.length > 0) {
+                resultsContainer.innerHTML += '<h3>Players</h3>';
+                data.players.forEach(player => {
+                    resultsFound = true;
+                    const resultElement = document.createElement('div');
+                    resultElement.className = 'search-result';
+                    resultElement.textContent = `${player.Name} (Player)`;
+                    resultElement.addEventListener('click', () => {
+                        console.log(`Fetching killmails for player: ${player.Id}`);
+                        fetchKillmails(player.Id, 'player');
+                    });
+                    resultsContainer.appendChild(resultElement);
                 });
-                resultsContainer.appendChild(resultElement);
-            });
+            }
+            
+            if (data.guilds && data.guilds.length > 0) {
+                resultsContainer.innerHTML += '<h3>Guilds</h3>';
+                data.guilds.forEach(guild => {
+                    resultsFound = true;
+                    const resultElement = document.createElement('div');
+                    resultElement.className = 'search-result';
+                    resultElement.textContent = `${guild.Name} (Guild)`;
+                    resultElement.addEventListener('click', () => {
+                        console.log(`Fetching killmails for guild: ${guild.Id}`);
+                        fetchKillmails(guild.Id, 'guild');
+                    });
+                    resultsContainer.appendChild(resultElement);
+                });
+            }
         }
         
-        if ((!data.players || data.players.length === 0) && (!data.guilds || data.guilds.length === 0)) {
-            resultsContainer.innerHTML += '<p>No results found</p>';
+        if (!resultsFound) {
+            resultsContainer.innerHTML += '<p>No results found. Try a different search term or server.</p>';
         }
         
         // Save search to history
         saveSearchTermToLocalStorage(searchTerm);
     } catch (error) {
-        resultsContainer.innerHTML = `Error fetching data: ${error.message}`;
+        resultsContainer.innerHTML = `
+            <h2>Search Error</h2>
+            <p>${error.message}</p>
+            <p>Please try another search term or select a different server.</p>
+            <p>Technical details: ${error.toString()}</p>
+        `;
         console.error('Search error:', error);
     }
 }
@@ -206,26 +238,32 @@ async function fetchKillmails(id, type) {
         } else if (type === 'guild') {
             endpoint = `guilds/${id}/top?range=week&limit=10`;
         } else {
-            killmailsContainer.innerHTML = 'Invalid type';
+            killmailsContainer.innerHTML = `Invalid type: ${type}`;
             return;
         }
 
-        console.log(`Fetching from endpoint: ${serverUrl}${endpoint}`);
+        const url = `${serverUrl}${endpoint}`;
+        console.log(`Fetching from URL: ${url}`);
         
-        const response = await fetch(`${serverUrl}${endpoint}`, {
-            method: 'GET',
-            headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json'
-            },
-            mode: 'cors'
-        });
+        const response = await fetch(url);
         
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
         
-        const data = await response.json();
+        // Log the raw response for debugging
+        const rawData = await response.text();
+        console.log('Raw killmail response:', rawData);
+        
+        // Try to parse the JSON
+        let data;
+        try {
+            data = JSON.parse(rawData);
+        } catch (e) {
+            console.error('JSON parse error:', e);
+            throw new Error('Failed to parse API response');
+        }
+        
         console.log('Killmail data:', data);
 
         killmailsContainer.innerHTML = '';
@@ -240,10 +278,12 @@ async function fetchKillmails(id, type) {
                 
                 // For player kills
                 if (killmail.Victim && killmail.Killer) {
+                    // Standard kill data
                     killmailHTML += `
                         <p>Victim: ${killmail.Victim.Name || 'Unknown'}</p>
                         <p>Killer: ${killmail.Killer.Name || 'Unknown'}</p>
                         <p>Fame: ${killmail.TotalVictimKillFame || 0}</p>
+                        <p>Time: ${new Date(killmail.TimeStamp).toLocaleString()}</p>
                     `;
                     
                     // Add items if available
@@ -252,6 +292,8 @@ async function fetchKillmails(id, type) {
                         killmail.Victim.Inventory.forEach(item => {
                             if (item && item.Type) {
                                 killmailHTML += `<li>${item.Type} (x${item.Count || 1})</li>`;
+                            } else if (item && item.ItemTypeId) {
+                                killmailHTML += `<li>${item.ItemTypeId} (x${item.Count || 1})</li>`;
                             }
                         });
                         killmailHTML += `</ul>`;
@@ -263,12 +305,26 @@ async function fetchKillmails(id, type) {
                         <p>Event ID: ${killmail.EventId}</p>
                         <p>Fame: ${killmail.Fame || 0}</p>
                     `;
+                    
+                    if (killmail.Killer && killmail.Victim) {
+                        killmailHTML += `
+                            <p>Killer: ${killmail.Killer.Name || 'Unknown'}</p>
+                            <p>Victim: ${killmail.Victim.Name || 'Unknown'}</p>
+                        `;
+                    }
+                }
+                // Generic case if we don't recognize the format
+                else {
+                    killmailHTML += `<p>ID: ${killmail.Id || killmail.EventId || 'Unknown'}</p>`;
+                    killmailHTML += `<p>Data format not recognized. Raw data in console.</p>`;
                 }
                 
+                // Add buttons
+                const eventId = killmail.EventId || killmail.Id || 0;
                 killmailHTML += `
                     <div>
-                        <button class="preview-button" onclick="previewKillmail(${killmail.EventId || killmail.Id || 0})">Preview</button>
-                        <button class="download-button" onclick="downloadKillmail(${killmail.EventId || killmail.Id || 0})">Download</button>
+                        <button class="preview-button" onclick="previewKillmail(${eventId})">Preview</button>
+                        <button class="download-button" onclick="downloadKillmail(${eventId})">Download</button>
                     </div>
                 `;
                 
@@ -276,10 +332,16 @@ async function fetchKillmails(id, type) {
                 killmailsContainer.appendChild(killmailElement);
             });
         } else {
-            killmailsContainer.innerHTML = 'No killmails found';
+            killmailsContainer.innerHTML = 'No killmails found for this selection.';
         }
     } catch (error) {
-        killmailsContainer.innerHTML = `Error fetching killmails: ${error.message}`;
+        killmailsContainer.innerHTML = `
+            <div class="error-message">
+                <h3>Error Fetching Killmails</h3>
+                <p>${error.message}</p>
+                <p>Try selecting a different server or search term.</p>
+            </div>
+        `;
         console.error('Killmail fetch error:', error);
     }
 }
@@ -346,11 +408,14 @@ async function displaySearchHistory() {
 document.addEventListener('DOMContentLoaded', () => {
     console.log('DOM loaded, setting up event listeners');
     
+    // Set up the search button click event
     document.getElementById('search-button').addEventListener('click', () => {
         const searchTerm = document.getElementById('search-input').value;
         if (searchTerm) {
             console.log('Search button clicked with term:', searchTerm);
             searchAlbionAPI(searchTerm);
+        } else {
+            alert('Please enter a search term');
         }
     });
     
@@ -361,9 +426,36 @@ document.addEventListener('DOMContentLoaded', () => {
             if (searchTerm) {
                 console.log('Enter key pressed with term:', searchTerm);
                 searchAlbionAPI(searchTerm);
+            } else {
+                alert('Please enter a search term');
             }
         }
     });
+    
+    // Test API connectivity on page load
+    fetch('https://gameinfo.albiononline.com/api/gameinfo/search?q=test')
+        .then(response => {
+            console.log('API connectivity test response:', response.status);
+            if (!response.ok) {
+                document.getElementById('results').innerHTML = `
+                    <div class="error-message">
+                        <h3>API Connection Warning</h3>
+                        <p>The Albion Online API may not be accessible right now (status: ${response.status}).</p>
+                        <p>Searches might not return results.</p>
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            console.error('API connectivity test error:', error);
+            document.getElementById('results').innerHTML = `
+                <div class="error-message">
+                    <h3>API Connection Error</h3>
+                    <p>Cannot connect to the Albion Online API. Searches will not work.</p>
+                    <p>Error: ${error.message}</p>
+                </div>
+            `;
+        });
     
     // Set up modal close button
     const modal = document.getElementById('preview-modal');

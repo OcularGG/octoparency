@@ -162,3 +162,32 @@ main {
     line-height: 1.5;
     text-align: center;
 }
+
+/* Add error message styling */
+.error-message {
+    background-color: #ffeeee;
+    border-left: 4px solid #ff0000;
+    padding: 10px 15px;
+    margin-bottom: 15px;
+    border-radius: 3px;
+}
+
+.error-message h3 {
+    color: #cc0000;
+    margin-top: 0;
+}
+
+/* Make search results more obvious */
+.search-result {
+    padding: 10px;
+    margin-bottom: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.search-result:hover {
+    background-color: #e8f4ff;
+    border-color: #66aaff;
+}
