@@ -52,13 +52,15 @@ body.dark-mode {
     text-align: center;
     margin-bottom: 20px;
     min-height: 100px; /* Reserve space for logo to prevent layout shifts */
-    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 .logo {
     width: 100px;
-    transition: filter 0.3s, opacity 1.5s ease-in-out;
-    will-change: opacity; /* Performance hint for browsers */
+    transition: opacity 1.5s ease-in-out;
+    opacity: 1;
 }
 
 .logo:hover {

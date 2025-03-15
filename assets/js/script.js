@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // Enhanced logo transition logic
+    // Simplified logo transition logic
     const logo = document.querySelector('.logo');
     const logos = [
         '/assets/ocular-logos/logo1.png',
@@ -23,59 +23,50 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     preloadImages();
     
-    // Create a clone for crossfade effect
-    const createLogoClone = () => {
-        const clone = logo.cloneNode(true);
-        clone.classList.add('logo-clone');
-        logo.parentNode.appendChild(clone);
-        return clone;
-    };
+    // Remove any existing clones
+    const existingClone = document.querySelector('.logo-clone');
+    if (existingClone) {
+        existingClone.parentNode.removeChild(existingClone);
+    }
     
-    // CSS for crossfade effect
+    // Fix logo positioning
     const style = document.createElement('style');
     style.textContent = `
         .logo-container {
             position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
-        .logo, .logo-clone {
+        .logo {
             transition: opacity 1.5s ease-in-out;
-            position: absolute;
-            top: 0;
-            left: 50%;
-            transform: translateX(-50%);
-        }
-        .logo-clone {
-            opacity: 0;
+            position: static;
+            width: 100px;
         }
     `;
     document.head.appendChild(style);
     
-    // Initial positioning
-    logo.style.position = 'relative';
-    logo.style.opacity = '1';
-    
-    const logoClone = createLogoClone();
-    
-    // Cinematic crossfade transition
+    // Clean, simple crossfade transition
     const transitionLogos = () => {
-        // Update the clone with next image
-        const nextIndex = (currentLogoIndex + 1) % logos.length;
-        logoClone.src = logos[nextIndex];
+        // Create temporary container for new image
+        const tempImg = new Image();
+        tempImg.src = logos[(currentLogoIndex + 1) % logos.length];
         
-        // Fade out current, fade in next
-        logo.style.opacity = '0';
-        logoClone.style.opacity = '1';
-        
-        // After transition completes, make the visible one the main logo
-        setTimeout(() => {
-            logo.src = logos[nextIndex];
-            logo.style.opacity = '1';
-            logoClone.style.opacity = '0';
-            currentLogoIndex = nextIndex;
-        }, 1500); // Match this with the CSS transition time
+        // When new image is loaded, fade out the old one
+        tempImg.onload = () => {
+            // Start fade out
+            logo.style.opacity = '0';
+            
+            // After fade completes, update src and fade in
+            setTimeout(() => {
+                currentLogoIndex = (currentLogoIndex + 1) % logos.length;
+                logo.src = logos[currentLogoIndex];
+                logo.style.opacity = '1';
+            }, 1000);
+        };
     };
     
-    // Start transitions with a more cinematic timing (4.5 seconds)
+    // Start transitions with a cinematic timing
     setInterval(transitionLogos, 4500);
 
     // Dark mode toggle
