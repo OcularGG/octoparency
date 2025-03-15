@@ -9,13 +9,31 @@
 <body>
     <header>
         <h1>Albion Online Killmails</h1>
-        <input type="text" id="search-input" placeholder="Search for player, guild, or alliance">
-        <button id="search-button">Search</button>
+        <div class="search-container">
+            <input type="text" id="search-input" placeholder="Search for player, guild, or alliance">
+            <button id="search-button">Search</button>
+        </div>
+        <div class="server-selector">
+            <label>Server: 
+                <select id="server-select">
+                    <option value="america" selected>Americas (Washington)</option>
+                    <option value="europe">Europe (Amsterdam)</option>
+                    <option value="asia">Asia (Singapore)</option>
+                </select>
+            </label>
+        </div>
     </header>
     <main>
         <div id="results"></div>
-        <div id="killmails" class="grid"></div> <!-- New section for detailed killmails -->
+        <div id="killmails" class="grid"></div>
     </main>
-    <script type="module" src="script.js"></script>
+    <div id="preview-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <div id="preview-content"></div>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>

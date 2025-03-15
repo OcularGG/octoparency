@@ -12,10 +12,6 @@
     {
       "src": "script.js",
       "use": "@vercel/static"
-    },
-    {
-      "src": "supabase.js",
-      "use": "@vercel/static"
     }
   ],
   "routes": [
