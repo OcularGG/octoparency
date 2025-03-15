@@ -3,6 +3,12 @@ const SUPABASE_URL = 'YOUR_SUPABASE_URL'; // Replace with your Supabase URL
 const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY'; // Replace with your Supabase anon key
 const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+// Hardcoded admin credentials (for demonstration purposes only)
+const ADMIN_CREDENTIALS = {
+    username: 'admin',
+    password: 'admin'
+};
+
 // Financial data categories organized by groups
 const dataCategories = [
     // Assets
@@ -57,11 +63,15 @@ const dataCategories = [
 // DOM elements
 const financialTable = document.getElementById('financial-data');
 const refreshButton = document.getElementById('refresh-btn');
-const toggleAdminButton = document.getElementById('toggle-admin-btn');
+const loginButton = document.getElementById('admin-login-btn');
+const logoutButton = document.getElementById('logout-btn');
 const lastUpdatedElement = document.getElementById('last-updated');
 const financialForm = document.getElementById('financial-form');
 const formGrid = document.querySelector('.form-grid');
 const calculateButton = document.getElementById('calculate-btn');
+const loginModal = document.getElementById('login-modal');
+const loginForm = document.getElementById('login-form');
+const closeModalButton = document.querySelector('.close');
 
 // Current data state
 let currentData = null;
@@ -397,15 +407,34 @@ async function submitFinancialData(formData) {
     }
 }
 
+// Login validation
+function validateLogin(username, password) {
+    return username === ADMIN_CREDENTIALS.username && password === ADMIN_CREDENTIALS.password;
+}
+
 // Toggle admin mode
-function toggleAdminMode() {
-    isAdminMode = !isAdminMode;
+function setAdminMode(isAdmin) {
+    isAdminMode = isAdmin;
     document.body.classList.toggle('admin-mode', isAdminMode);
-    toggleAdminButton.textContent = isAdminMode ? 'Exit Admin Mode' : 'Toggle Admin Mode';
     
     if (isAdminMode) {
+        loginButton.style.display = 'none';
         generateDataEntryForm();
+    } else {
+        loginButton.style.display = 'block';
     }
+}
+
+// Show login modal
+function showLoginModal() {
+    loginModal.style.display = 'block';
+    document.getElementById('username').focus();
+}
+
+// Hide login modal
+function hideLoginModal() {
+    loginModal.style.display = 'none';
+    loginForm.reset();
 }
 
 // Initialize the dashboard
@@ -416,7 +445,35 @@ async function initDashboard() {
 
 // Event listeners
 refreshButton.addEventListener('click', initDashboard);
-toggleAdminButton.addEventListener('click', toggleAdminMode);
+
+loginButton.addEventListener('click', showLoginModal);
+
+logoutButton.addEventListener('click', function() {
+    setAdminMode(false);
+});
+
+closeModalButton.addEventListener('click', hideLoginModal);
+
+// Close modal when clicking outside the content
+window.addEventListener('click', function(event) {
+    if (event.target == loginModal) {
+        hideLoginModal();
+    }
+});
+
+loginForm.addEventListener('submit', function(e) {
+    e.preventDefault();
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+    
+    if (validateLogin(username, password)) {
+        hideLoginModal();
+        setAdminMode(true);
+    } else {
+        alert('Invalid username or password');
+    }
+});
+
 calculateButton.addEventListener('click', function() {
     if (!currentData) currentData = {};
     

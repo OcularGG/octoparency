@@ -11,12 +11,12 @@
     <header>
         <h1>Octoparency</h1>
         <p>Financial Transparency Dashboard</p>
+        <button id="admin-login-btn" class="login-btn">Admin Login</button>
     </header>
 
     <main>
         <section class="controls">
             <button id="refresh-btn">Refresh Data</button>
-            <button id="toggle-admin-btn">Toggle Admin Mode</button>
             <div class="date-display">
                 <span>Last Updated: </span>
                 <span id="last-updated">Loading...</span>
@@ -42,7 +42,10 @@
 
         <!-- New Admin Form Section -->
         <section id="admin-form-section" class="admin-only">
-            <h2>Add New Financial Data</h2>
+            <div class="admin-header">
+                <h2>Add New Financial Data</h2>
+                <button id="logout-btn">Logout</button>
+            </div>
             <form id="financial-form">
                 <div class="form-grid">
                     <!-- Form fields will be generated dynamically -->
@@ -54,6 +57,27 @@
             </form>
         </section>
     </main>
+
+    <!-- Login Modal -->
+    <div id="login-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Admin Login</h2>
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="username">Username:</label>
+                    <input type="text" id="username" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password:</label>
+                    <input type="password" id="password" required>
+                </div>
+                <div class="form-actions">
+                    <button type="submit">Login</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
     <footer>
         <p>&copy; 2023 Octoparency - Financial Transparency Dashboard</p>
