@@ -123,30 +123,20 @@ function getSelectedServerUrl() {
 
 async function searchAlbionAPI(searchTerm) {
     const serverUrl = getSelectedServerUrl();
-
     const resultsContainer = document.getElementById('results');
     const killmailsContainer = document.getElementById('killmails');
     resultsContainer.innerHTML = 'Loading...';
     killmailsContainer.innerHTML = '';
 
     try {
-        // Log the search request with full URL for debugging
         const searchUrl = `${serverUrl}search?q=${encodeURIComponent(searchTerm)}`;
         console.log(`Searching URL: ${searchUrl}`);
-        
-        // Direct fetch without extra options first to test if API is responding
         const response = await fetch(searchUrl);
-        
-        // Check if response is ok
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
-        
-        // Log the raw response for debugging
         const rawData = await response.text();
         console.log('Raw API response:', rawData);
-        
-        // Try to parse the JSON
         let data;
         try {
             data = JSON.parse(rawData);
@@ -154,65 +144,29 @@ async function searchAlbionAPI(searchTerm) {
             console.error('JSON parse error:', e);
             throw new Error('Failed to parse API response');
         }
-        
         console.log('Search results object:', data);
 
         resultsContainer.innerHTML = '<h2>Search Results</h2>';
         let resultsFound = false;
-        
-        // Handle different API response formats
-        if (Array.isArray(data)) {
-            // Format 1: Array of results
-            resultsContainer.innerHTML += '<h3>Results</h3>';
-            data.forEach(item => {
+        // Only process players
+        if (data && data.players && Array.isArray(data.players) && data.players.length > 0) {
+            resultsContainer.innerHTML += '<h3>Players</h3>';
+            data.players.forEach(player => {
                 resultsFound = true;
                 const resultElement = document.createElement('div');
                 resultElement.className = 'search-result';
-                resultElement.textContent = `${item.Name} (${item.Type})`;
+                resultElement.textContent = `${player.Name} (Player)`;
                 resultElement.addEventListener('click', () => {
-                    console.log(`Fetching data for: ${item.Id} (${item.Type})`);
-                    fetchKillmails(item.Id, item.Type.toLowerCase());
+                    console.log(`Fetching killmails for player: ${player.Id}`);
+                    fetchKillmails(player.Id, 'player');
                 });
                 resultsContainer.appendChild(resultElement);
             });
-        } else if (data && typeof data === 'object') {
-            // Format 2: Object with categories
-            if (data.players && data.players.length > 0) {
-                resultsContainer.innerHTML += '<h3>Players</h3>';
-                data.players.forEach(player => {
-                    resultsFound = true;
-                    const resultElement = document.createElement('div');
-                    resultElement.className = 'search-result';
-                    resultElement.textContent = `${player.Name} (Player)`;
-                    resultElement.addEventListener('click', () => {
-                        console.log(`Fetching killmails for player: ${player.Id}`);
-                        fetchKillmails(player.Id, 'player');
-                    });
-                    resultsContainer.appendChild(resultElement);
-                });
-            }
-            
-            if (data.guilds && data.guilds.length > 0) {
-                resultsContainer.innerHTML += '<h3>Guilds</h3>';
-                data.guilds.forEach(guild => {
-                    resultsFound = true;
-                    const resultElement = document.createElement('div');
-                    resultElement.className = 'search-result';
-                    resultElement.textContent = `${guild.Name} (Guild)`;
-                    resultElement.addEventListener('click', () => {
-                        console.log(`Fetching killmails for guild: ${guild.Id}`);
-                        fetchKillmails(guild.Id, 'guild');
-                    });
-                    resultsContainer.appendChild(resultElement);
-                });
-            }
         }
-        
         if (!resultsFound) {
-            resultsContainer.innerHTML += '<p>No results found. Try a different search term or server.</p>';
+            resultsContainer.innerHTML += '<p>No player results found. Try a different search term or server.</p>';
         }
-        
-        // Save search to history
+
         saveSearchTermToLocalStorage(searchTerm);
     } catch (error) {
         resultsContainer.innerHTML = `
