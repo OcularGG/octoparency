@@ -950,11 +950,12 @@ body.sidebar-collapsed .main-content {
     width: 100%;
 }
 
-/* Sidebar toggle button */
+/* Sidebar toggle button - repositioned to middle */
 .sidebar-toggle {
     position: absolute;
     right: -42px; /* Position outside the sidebar */
-    top: 20px;
+    top: 50%; /* Position in the middle vertically */
+    transform: translateY(-50%); /* Center it perfectly */
     width: 42px;
     height: 42px;
     background-color: var(--sidebar-bg-color);
@@ -967,34 +968,21 @@ body.sidebar-collapsed .main-content {
     align-items: center;
     gap: 5px;
     z-index: 51;
-    box-shadow: 3px 0 5px rgba(0, 0, 0, 0.1);
-    transition: background-color 0.3s;
+    box-shadow: 3px 0 5px rgba(0, 0, 0, 0.2);
+    transition: background-color 0.3s, right 0.3s; /* Add transition for position */
 }
 
+/* Update toggle button style for better visibility */
 .sidebar-toggle:hover {
     background-color: var(--btn-hover-color);
 }
 
-/* Toggle button hamburger icon */
-.toggle-icon-bar {
-    width: 22px;
-    height: 2px;
-    background-color: white;
-    border-radius: 2px;
-    transition: transform 0.3s, opacity 0.3s;
-}
-
-/* Animated hamburger icon for collapsed state */
-body.sidebar-collapsed .toggle-icon-bar:nth-child(1) {
-    transform: translateY(7px) rotate(45deg);
-}
-
-body.sidebar-collapsed .toggle-icon-bar:nth-child(2) {
-    opacity: 0;
-}
-
-body.sidebar-collapsed .toggle-icon-bar:nth-child(3) {
-    transform: translateY(-7px) rotate(-45deg);
+/* Keep sidebar toggle button visible and positioned correctly when collapsed */
+body.sidebar-collapsed .sidebar-toggle {
+    position: fixed; /* Change to fixed when sidebar is collapsed */
+    left: 0; /* Attach to left edge of screen */
+    right: auto; /* Remove right positioning */
+    border-radius: 0 5px 5px 0; /* Keep rounded corners on right side only */
 }
 
 /* Responsive layout for small screens */
@@ -1151,8 +1139,15 @@ body.sidebar-collapsed .toggle-icon-bar:nth-child(3) {
     
     /* Adjust sidebar toggle for mobile */
     .sidebar-toggle {
-        right: 10px;
-        top: 15px;
+        top: 50%; /* Keep in middle for mobile */
+        right: -36px; /* Slightly smaller for mobile */
+        width: 36px;
+        height: 36px;
+    }
+    
+    body.sidebar-collapsed .sidebar-toggle {
+        top: 50%;
+        left: 0;
     }
     
     /* Adjust login button */

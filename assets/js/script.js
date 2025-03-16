@@ -119,20 +119,49 @@ document.addEventListener('DOMContentLoaded', () => {
     const sidebarState = localStorage.getItem('sidebar-collapsed');
     if (sidebarState === 'true') {
         body.classList.add('sidebar-collapsed');
+        // Update icon for initial state
+        updateToggleButtonIcon(true);
+    } else {
+        // Update icon for initial state
+        updateToggleButtonIcon(false);
     }
     
     // Toggle sidebar
     if (sidebarToggle) {
         sidebarToggle.addEventListener('click', () => {
+            const willBeCollapsed = !body.classList.contains('sidebar-collapsed');
             body.classList.toggle('sidebar-collapsed');
             
+            // Update the toggle button icon
+            updateToggleButtonIcon(willBeCollapsed);
+            
             // Save preference to localStorage
-            const isCollapsed = body.classList.contains('sidebar-collapsed');
-            localStorage.setItem('sidebar-collapsed', isCollapsed);
+            localStorage.setItem('sidebar-collapsed', willBeCollapsed);
             
             // Force resize event for slideshow to adjust
             window.dispatchEvent(new Event('resize'));
         });
+    }
+
+    // Update toggle button arrow direction based on sidebar state
+    function updateToggleButtonIcon(isCollapsed) {
+        const toggleBars = document.querySelectorAll('.toggle-icon-bar');
+        
+        if (toggleBars.length === 3) {
+            if (isCollapsed) {
+                // Change to right-pointing arrow when collapsed
+                toggleBars[0].style.transform = 'translateY(0) rotate(-45deg)';
+                toggleBars[1].style.opacity = '1';
+                toggleBars[1].style.transform = 'scaleX(0.8)';
+                toggleBars[2].style.transform = 'translateY(0) rotate(45deg)';
+            } else {
+                // Change to left-pointing arrow when expanded
+                toggleBars[0].style.transform = 'translateY(0) rotate(45deg)';
+                toggleBars[1].style.opacity = '1';
+                toggleBars[1].style.transform = 'scaleX(0.8)';
+                toggleBars[2].style.transform = 'translateY(0) rotate(-45deg)';
+            }
+        }
     }
 
     // ==========================================
