@@ -109,117 +109,83 @@ document.addEventListener('DOMContentLoaded', () => {
     // Slideshow functionality
     let slideIndex = 1;
     
-    // Enhanced image loading diagnostic function
+    // Enhanced image loading with placeholder images
     function preloadSlideImages() {
-        console.log("Preloading slideshow images...");
+        console.log("Setting up slideshow with placeholder images...");
         const slideshowContainer = document.getElementById('slideshow-container');
         
-        // Define image filenames
-        const imageFilenames = ['slide1.jpeg', 'slide2.jpeg', 'slide3.jpeg', 'slide4.jpeg', 'slide5.jpeg', 'slide6.jpeg'];
+        // Store the existing dots container if it exists
+        const existingDotsContainer = document.querySelector('.dots-container');
         
-        // Function to create a slide element
-        function createSlide(filename, index) {
+        // Clear any existing slides but preserve the dots
+        slideshowContainer.innerHTML = '';
+        
+        // Create navigation arrows
+        const prevArrow = document.createElement('a');
+        prevArrow.className = 'prev';
+        prevArrow.innerHTML = '&#10094;';
+        prevArrow.onclick = function() { plusSlides(-1); };
+        
+        const nextArrow = document.createElement('a');
+        nextArrow.className = 'next';
+        nextArrow.innerHTML = '&#10095;';
+        nextArrow.onclick = function() { plusSlides(1); };
+        
+        slideshowContainer.appendChild(prevArrow);
+        slideshowContainer.appendChild(nextArrow);
+        
+        // Use different placeholder images for variety with blue gradient shades
+        const placeholderUrls = [
+            'https://via.placeholder.com/1920x1080/0F52BA/FFFFFF?text=OCULAR+Slide+1',
+            'https://via.placeholder.com/1920x1080/1E90FF/FFFFFF?text=OCULAR+Slide+2',
+            'https://via.placeholder.com/1920x1080/0A2968/FFFFFF?text=OCULAR+Slide+3',
+            'https://via.placeholder.com/1920x1080/0D4C8B/FFFFFF?text=OCULAR+Slide+4',
+            'https://via.placeholder.com/1920x1080/2196F3/FFFFFF?text=OCULAR+Slide+5',
+            'https://via.placeholder.com/1920x1080/4285F4/FFFFFF?text=OCULAR+Slide+6'
+        ];
+        
+        // Create slides with placeholder images
+        placeholderUrls.forEach((url, index) => {
+            // Create slide
             const slide = document.createElement('div');
             slide.className = 'slide fade';
             
+            // Create image
             const img = document.createElement('img');
-            img.src = `/images/${filename}`;
+            img.src = url;
             img.alt = `Slide ${index + 1}`;
-            img.setAttribute('data-original-name', filename);
             
+            // Create text caption
             const textDiv = document.createElement('div');
             textDiv.className = 'text';
             textDiv.textContent = 'OCULAR';
             
+            // Add to slide
             slide.appendChild(img);
             slide.appendChild(textDiv);
-            return slide;
-        }
-        
-        // Generate slides dynamically
-        imageFilenames.forEach((filename, index) => {
-            const slide = createSlide(filename, index);
             slideshowContainer.appendChild(slide);
         });
         
-        const slides = document.querySelectorAll('.slide img');
-        
-        slides.forEach((img, index) => {
-            // Log detailed path information
-            console.log(`Slide ${index + 1}:`);
-            console.log(`  - Current path: "${img.src}"`);
-            console.log(`  - Absolute URL: "${new URL(img.src, window.location.href).href}"`);
-            console.log(`  - Image exists check starting...`);
+        // Create dots container if it doesn't exist already
+        if (!existingDotsContainer) {
+            const dotsContainer = document.createElement('div');
+            dotsContainer.className = 'dots-container';
             
-            const slide = img.parentElement;
-            slide.classList.add('loading');
-            
-            // Create a debugging element to show path information on the slide
-            const debugInfo = document.createElement('div');
-            debugInfo.className = 'debug-info';
-            debugInfo.style.cssText = 'position:absolute; top:10px; left:10px; background:rgba(0,0,0,0.7); color:white; padding:5px; border-radius:3px; font-size:12px; max-width:80%; z-index:100;';
-            debugInfo.innerHTML = `Attempted path: ${img.src}`;
-            slide.appendChild(debugInfo);
-            
-            // Try multiple possible paths - prioritize the images/ folder and try different extensions
-            const tryPaths = [
-                img.src, // Original path
-                img.src.replace(/^\//, ''), // Remove leading slash if present
-                '/images/' + img.getAttribute('data-original-name'), // Root images folder with original filename
-                'images/' + img.getAttribute('data-original-name'), // Relative images folder
-                // Try different extensions
-                '/images/' + img.getAttribute('data-original-name').replace(/\.(png|jpeg|jpg)$/, '.jpeg'),
-                '/images/' + img.getAttribute('data-original-name').replace(/\.(png|jpeg|jpg)$/, '.jpg'),
-                '/images/' + img.getAttribute('data-original-name').replace(/\.(png|jpeg|jpg)$/, '.png'),
-                // Fallback to assets folder
-                '/assets/slideshow-images/' + img.getAttribute('data-original-name')
-            ];
-            
-            // Function to try loading an image path
-            function tryLoadImage(pathIndex) {
-                if (pathIndex >= tryPaths.length) {
-                    // All paths failed, use placeholder
-                    console.error(`All paths failed for slide ${index + 1}`);
-                    img.onerror = null;
-                    img.src = 'https://via.placeholder.com/800x600?text=Image+Not+Found';
-                    debugInfo.innerHTML += `<br>❌ All paths failed`;
-                    return;
-                }
-                
-                const path = tryPaths[pathIndex];
-                console.log(`  - Trying path: "${path}"`);
-                debugInfo.innerHTML += `<br>Trying: ${path}`;
-                
-                const testImg = new Image();
-                
-                testImg.onload = function() {
-                    console.log(`  - SUCCESS! Image loaded from "${path}"`);
-                    img.src = path;
-                    img.onerror = null; // Clear error handler
-                    slide.classList.remove('loading');
-                    debugInfo.innerHTML += `<br>✅ Success with: ${path}`;
-                    
-                    // Remove debug info after success and delay
-                    setTimeout(() => {
-                        if (debugInfo.parentNode) {
-                            debugInfo.parentNode.removeChild(debugInfo);
-                        }
-                    }, 5000);
-                };
-                
-                testImg.onerror = function() {
-                    console.log(`  - Failed to load from "${path}"`);
-                    debugInfo.innerHTML += `<br>❌ Failed: ${path}`;
-                    // Try next path
-                    tryLoadImage(pathIndex + 1);
-                };
-                
-                testImg.src = path;
+            // Create 6 rectangle dots with our desired styling
+            for (let i = 0; i < 6; i++) {
+                const dot = document.createElement('span');
+                dot.className = 'dot';
+                dot.onclick = function() { currentSlide(i + 1); };
+                dotsContainer.appendChild(dot);
             }
             
-            // Start trying paths
-            tryLoadImage(0);
-        });
+            slideshowContainer.appendChild(dotsContainer);
+        } else {
+            // Re-add the existing dots container
+            slideshowContainer.appendChild(existingDotsContainer);
+        }
+        
+        console.log("Slideshow setup complete with placeholder images");
     }
     
     function handleImageError(img) {
@@ -288,31 +254,42 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
-    // Initialize slideshow
+    // Initialize slideshow with these functions in the right order
     preloadSlideImages();
     showSlides(slideIndex);
-    
-    // Auto advance slides every 6 seconds
-    setInterval(function() {
-        plusSlides(1);
-    }, 6000);
+    setupSlideNavigation();
     
     // Wire up event listeners for arrow navigation
-    document.querySelector('.prev').addEventListener('click', function() {
-        plusSlides(-1);
-    });
-    
-    document.querySelector('.next').addEventListener('click', function() {
-        plusSlides(1);
-    });
-    
-    // Make the dot controls work
-    document.querySelectorAll('.dot').forEach(function(dot, index) {
-        dot.addEventListener('click', function() {
-            currentSlide(index + 1);
+    function setupSlideNavigation() {
+        // Auto advance slides every 6 seconds
+        setInterval(function() {
+            plusSlides(1);
+        }, 6000);
+        
+        // Wire up event listeners for arrow navigation
+        const prevArrow = document.querySelector('.prev');
+        const nextArrow = document.querySelector('.next');
+        
+        if (prevArrow) {
+            prevArrow.addEventListener('click', function() {
+                plusSlides(-1);
+            });
+        }
+        
+        if (nextArrow) {
+            nextArrow.addEventListener('click', function() {
+                plusSlides(1);
+            });
+        }
+        
+        // Make the dot controls work - ensure we preserve their styling
+        document.querySelectorAll('.dot').forEach(function(dot, index) {
+            dot.addEventListener('click', function() {
+                currentSlide(index + 1);
+            });
         });
-    });
-
+    }
+    
     // Theme toggle functionality
     document.getElementById('theme-toggle-input').addEventListener('change', function() {
         document.body.classList.toggle('dark-mode');
