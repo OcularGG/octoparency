@@ -1013,7 +1013,9 @@ body.sidebar-collapsed .sidebar-toggle {
     }
     
     body.sidebar-collapsed .sidebar-toggle {
-        right: -42px; /* Keep the button visible when collapsed on mobile */
+        top: 50%; /* Keep in middle */
+        left: 0;
+        right: auto;
     }
 }
 

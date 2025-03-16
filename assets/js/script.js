@@ -117,8 +117,16 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Check for saved sidebar state - default to expanded if no preference saved
     const sidebarState = localStorage.getItem('sidebar-collapsed');
-    let isCollapsed = sidebarState === 'true'; // Correctly parse the stored value
+    
+    // If localStorage value is null (first time visitor), set default to expanded
+    if (sidebarState === null) {
+        localStorage.setItem('sidebar-collapsed', 'false');
+    }
+    
+    // Parse the state correctly
+    let isCollapsed = sidebarState === 'true';
 
+    // Apply the appropriate class based on the state
     if (isCollapsed) {
         body.classList.add('sidebar-collapsed');
     } else {
@@ -300,13 +308,20 @@ document.addEventListener('DOMContentLoaded', () => {
         function handleImageError(img, index) {
             console.error(`Failed to load image for slide ${index + 1}: ${img.src}`);
             
-            // Try fallback with different extensions
-            const originalSrc = img.src;
-            const filename = originalSrc.substring(originalSrc.lastIndexOf('/') + 1);
-            const basename = filename.substring(0, filename.lastIndexOf('.'));
-            
-            // Try loading with alternative extensions
-            tryAlternativeExtensions(img, basename, 0);
+            try {
+                // Try fallback with different extensions
+                const originalSrc = img.src;
+                const filename = originalSrc.substring(originalSrc.lastIndexOf('/') + 1);
+                const basename = filename.substring(0, filename.lastIndexOf('.'));
+                
+                // Try loading with alternative extensions
+                tryAlternativeExtensions(img, basename, 0);
+            } catch (e) {
+                console.error('Error handling image fallback:', e);
+                // Set a default fallback if all else fails
+                img.src = 'https://via.placeholder.com/1920x1080/0F52BA/FFFFFF?text=Image+Not+Found';
+                img.onerror = null;
+            }
         }
         
         // Try different file extensions if the original one fails
