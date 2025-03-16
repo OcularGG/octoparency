@@ -142,12 +142,10 @@
     <div class="main-content">
         <button class="login-button">LOGIN</button>
         <div class="content-wrapper">
-            <h1>Welcome to Octoparency</h1>
-            <p>Your transparency solution for modern projects.</p>
-            <!-- Additional content can go here -->
+            <!-- Welcome text removed -->
             
-            <!-- Slideshow container -->
-            <div class="slideshow-container">
+            <!-- Slideshow container - now takes up full space -->
+            <div class="slideshow-container fullscreen-slideshow">
                 <div class="slide fade">
                     <img src="/assets/slideshow-images/slide1.jpg" style="width:100%">
                     <div class="text">OCULAR</div>
@@ -160,14 +158,15 @@
                     <img src="/assets/slideshow-images/slide3.jpg" style="width:100%">
                     <div class="text">OCULAR</div>
                 </div>
-                <!-- Add more slides as needed -->
+                <!-- Navigation arrows for easier navigation -->
+                <a class="prev" onclick="plusSlides(-1)">&#10094;</a>
+                <a class="next" onclick="plusSlides(1)">&#10095;</a>
                 
                 <!-- Navigation dots -->
                 <div class="dots-container">
                     <span class="dot" onclick="currentSlide(1)"></span>
                     <span class="dot" onclick="currentSlide(2)"></span>
                     <span class="dot" onclick="currentSlide(3)"></span>
-                    <!-- Add more dots as needed -->
                 </div>
             </div>
         </div>
