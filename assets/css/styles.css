@@ -678,19 +678,6 @@ body.dark-mode .toggle-icon::before {
   height: 55%; /* Slightly reduced from 60% */
 }
 
-/* Make Albion button image match SVG icon sizing and styling */
-.Btn img.albion-logo {
-  transition: transform 0.3s ease, filter 0.3s ease;
-  filter: brightness(0); /* Dark by default for light mode */
-  width: 20px; /* Reduced from 24px */
-  height: 20px; /* Reduced from 24px */
-  object-fit: contain; /* Preserve aspect ratio */
-}
-
-body.dark-mode .Btn img.albion-logo {
-  filter: brightness(0) invert(1); /* White in dark mode */
-}
-
 /* Social media icon hover effects with gradients */
 .youtube-btn:hover svg {
   transform: scale(1.15);
@@ -710,12 +697,6 @@ body.dark-mode .Btn img.albion-logo {
 .github-btn:hover svg {
   transform: scale(1.15);
   fill: url(#github-gradient); /* GitHub gradient */
-}
-
-/* New Albion button hover effect - blue gradient instead of gold */
-.albion-btn:hover img.albion-logo {
-  transform: scale(1.15);
-  filter: brightness(0) invert(0.8) sepia(1) saturate(5) hue-rotate(190deg); /* Sapphire blue filter effect */
 }
 
 /* Remove background elements that are no longer needed */
@@ -1009,6 +990,93 @@ body.sidebar-collapsed .sidebar-toggle {
     left: 0; /* Attach to left edge of screen */
     right: auto; /* Remove right positioning */
     border-radius: 0 5px 5px 0; /* Keep rounded corners on right side only */
+}
+
+/* Updated sidebar toggle button with improved arrows */
+.sidebar-toggle {
+    position: absolute;
+    right: -42px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 42px;
+    height: 42px;
+    background-color: var(--sidebar-bg-color);
+    color: var(--sidebar-text-color);
+    border: none;
+    border-radius: 0 5px 5px 0;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 51;
+    box-shadow: 3px 0 5px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
+}
+
+/* Remove old toggle icon bars */
+.toggle-icon-bar {
+    display: none;
+}
+
+/* New modern arrow icon */
+.sidebar-arrow {
+    position: relative;
+    width: 14px;
+    height: 14px;
+    transition: all 0.3s ease;
+}
+
+/* Create arrow from borders */
+.sidebar-arrow:before,
+.sidebar-arrow:after {
+    content: "";
+    position: absolute;
+    width: 10px;
+    height: 2px;
+    background-color: var(--sidebar-text-color);
+    border-radius: 1px;
+    transition: all 0.3s ease;
+}
+
+.sidebar-arrow:before {
+    transform: rotate(45deg);
+    top: 3px;
+    left: 2px;
+}
+
+.sidebar-arrow:after {
+    transform: rotate(-45deg);
+    bottom: 3px;
+    left: 2px;
+}
+
+/* Flipped arrow styles for when sidebar is collapsed */
+body.sidebar-collapsed .sidebar-arrow:before {
+    transform: rotate(-45deg);
+    top: 3px;
+}
+
+body.sidebar-collapsed .sidebar-arrow:after {
+    transform: rotate(45deg);
+    bottom: 3px;
+}
+
+/* Hover effect for the toggle */
+.sidebar-toggle:hover {
+    background-color: var(--btn-hover-color);
+}
+
+.sidebar-toggle:hover .sidebar-arrow:before,
+.sidebar-toggle:hover .sidebar-arrow:after {
+    background-color: white;
+}
+
+/* Keep sidebar toggle button visible and positioned correctly when collapsed */
+body.sidebar-collapsed .sidebar-toggle {
+    position: fixed;
+    left: 0;
+    right: auto;
+    border-radius: 0 5px 5px 0;
 }
 
 /* Responsive layout for small screens */

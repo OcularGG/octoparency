@@ -216,13 +216,13 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem('sidebar-collapsed', collapsed);
     });
     function setSidebarState(collapsed) {
-         if (collapsed) {
-             sidebar.classList.add('collapsed');
-             toggleBtn.textContent = '→'; // Show arrow indicating expansion
-         } else {
-             sidebar.classList.remove('collapsed');
-             toggleBtn.textContent = '←'; // Show arrow indicating collapse
-         }
+        if (collapsed) {
+            sidebar.classList.add('collapsed');
+            document.body.classList.add('sidebar-collapsed');
+        } else {
+            sidebar.classList.remove('collapsed');
+            document.body.classList.remove('sidebar-collapsed');
+        }
     }
 })();
 // ---- Sidebar Menu Rewrite End ----
