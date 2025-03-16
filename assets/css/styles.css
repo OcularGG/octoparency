@@ -34,9 +34,10 @@ body.dark-mode {
     --btn-hover-color: #0F52BA;
 }
 
+/* Fix sidebar background issue - make sure it's not changing color */
 .sidebar {
     width: 250px;
-    background-color: var(--sidebar-bg-color);
+    background-color: var(--sidebar-bg-color); /* Keep this solid */
     color: white;
     padding: 20px;
     display: flex;
@@ -49,7 +50,7 @@ body.dark-mode {
     z-index: 50; /* Ensure sidebar appears above other content */
 }
 
-/* Animated sidebar border - improved sync with logo */
+/* Fix the right border animation to ONLY affect the border */
 .sidebar::after {
     content: '';
     position: absolute;
@@ -57,9 +58,9 @@ body.dark-mode {
     right: 0;
     width: 5px;
     height: 100%;
-    /* Remove background-image property and use animation only */
-    animation: logoColorShift 4.5s steps(1) infinite;
-    animation-timing-function: steps(1); /* Use steps for precise timing */
+    background-image: linear-gradient(to bottom, #0F52BA, #1E90FF);
+    animation: logoColorShift 4.5s ease-in-out infinite;
+    z-index: 2; /* Ensure it's above the sidebar background */
 }
 
 .logo-container {
@@ -82,21 +83,22 @@ body.dark-mode {
     filter: none;
 }
 
-/* Animated title styling - improved sync with logo */
+/* Fix animated title styling */
 .site-title {
     text-align: center;
     font-size: 24px;
     font-weight: bold;
     margin: 0 0 20px 0;
-    /* Remove background-image property and use animation only */
+    background-image: linear-gradient(90deg, #0F52BA, #1E90FF);
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
     width: 100%;
     padding: 0 10px;
     letter-spacing: 0.5px;
-    animation: logoTextColorShift 4.5s steps(1) infinite;
-    animation-timing-function: steps(1); /* Use steps for precise timing */
+    animation: logoTextColorShift 4.5s ease-in-out infinite;
+    position: relative; /* Ensure proper stacking */
+    z-index: 3; /* Above the sidebar background */
 }
 
 .sidebar-nav {
