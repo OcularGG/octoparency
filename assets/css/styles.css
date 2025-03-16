@@ -846,20 +846,21 @@ body.dark-mode .toggle-icon::before {
     100% { transform: translate(-50%, -50%) rotate(360deg); }
 }
 
-/* Improve text display on slides */
+/* Improve text display on slides and position higher to avoid theme toggle */
 .text {
     color: #ffffff;
     font-size: 18px;
     font-weight: bold;
     padding: 8px 16px;
     position: absolute;
-    bottom: 20px;
+    bottom: 60px; /* Raised from 20px to clear the theme toggle button */
     right: 20px;
     text-align: right;
     background-color: rgba(0, 0, 0, 0.6);
     border-radius: 5px;
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
     letter-spacing: 1px;
+    z-index: 50; /* Ensure it appears above other elements */
 }
 
 /* Make the first slide visible by default */

@@ -105,276 +105,212 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // Fix for duplicate event listeners - remove the nested DOMContentLoaded
-    // Slideshow functionality
-    let slideIndex = 1;
-    
-    // Enhanced image loading with placeholder images
-    function preloadSlideImages() {
-        console.log("Setting up slideshow with placeholder images...");
-        const slideshowContainer = document.getElementById('slideshow-container');
-        
-        // Store the existing dots container if it exists
-        const existingDotsContainer = document.querySelector('.dots-container');
-        
-        // Clear any existing slides but preserve the dots
-        slideshowContainer.innerHTML = '';
-        
-        // Create navigation arrows
-        const prevArrow = document.createElement('a');
-        prevArrow.className = 'prev';
-        prevArrow.innerHTML = '&#10094;';
-        prevArrow.onclick = function() { plusSlides(-1); };
-        
-        const nextArrow = document.createElement('a');
-        nextArrow.className = 'next';
-        nextArrow.innerHTML = '&#10095;';
-        nextArrow.onclick = function() { plusSlides(1); };
-        
-        slideshowContainer.appendChild(prevArrow);
-        slideshowContainer.appendChild(nextArrow);
-        
-        // Use different placeholder images for variety with blue gradient shades
-        const placeholderUrls = [
-            'https://via.placeholder.com/1920x1080/0F52BA/FFFFFF?text=OCULAR+Slide+1',
-            'https://via.placeholder.com/1920x1080/1E90FF/FFFFFF?text=OCULAR+Slide+2',
-            'https://via.placeholder.com/1920x1080/0A2968/FFFFFF?text=OCULAR+Slide+3',
-            'https://via.placeholder.com/1920x1080/0D4C8B/FFFFFF?text=OCULAR+Slide+4',
-            'https://via.placeholder.com/1920x1080/2196F3/FFFFFF?text=OCULAR+Slide+5',
-            'https://via.placeholder.com/1920x1080/4285F4/FFFFFF?text=OCULAR+Slide+6'
-        ];
-        
-        // Create slides with placeholder images
-        placeholderUrls.forEach((url, index) => {
-            // Create slide
-            const slide = document.createElement('div');
-            slide.className = 'slide fade';
-            
-            // Create image
-            const img = document.createElement('img');
-            img.src = url;
-            img.alt = `Slide ${index + 1}`;
-            
-            // Create text caption
-            const textDiv = document.createElement('div');
-            textDiv.className = 'text';
-            textDiv.textContent = 'OCULAR';
-            
-            // Add to slide
-            slide.appendChild(img);
-            slide.appendChild(textDiv);
-            slideshowContainer.appendChild(slide);
-        });
-        
-        // Create dots container if it doesn't exist already
-        if (!existingDotsContainer) {
-            const dotsContainer = document.createElement('div');
-            dotsContainer.className = 'dots-container';
-            
-            // Create 6 rectangle dots with our desired styling
-            for (let i = 0; i < 6; i++) {
-                const dot = document.createElement('span');
-                dot.className = 'dot';
-                dot.onclick = function() { currentSlide(i + 1); };
-                dotsContainer.appendChild(dot);
-            }
-            
-            slideshowContainer.appendChild(dotsContainer);
-        } else {
-            // Re-add the existing dots container
-            slideshowContainer.appendChild(existingDotsContainer);
-        }
-        
-        console.log("Slideshow setup complete with placeholder images");
-    }
-    
-    function handleImageError(img) {
-        const slide = img.parentElement;
-        slide.classList.remove('loading');
-        
-        // Try relative path if absolute path fails
-        if (img.src.startsWith('/')) {
-            const relativePath = img.src.substring(1); // Remove leading slash
-            console.log(`Trying relative path: ${relativePath}`);
-            img.src = relativePath;
-            return;
-        }
-        
-        // If that fails too, use a placeholder
-        img.onerror = null; // Prevent infinite loop
-        img.src = 'https://via.placeholder.com/800x600?text=Image+Not+Found';
-        
-        // Add a message inside the slide
-        const message = document.createElement('div');
-        message.className = 'error-message';
-        message.textContent = 'Image could not be loaded';
-        slide.appendChild(message);
-    }
-    
-    // Next/previous controls
-    window.plusSlides = function(n) {
-        showSlides(slideIndex += n);
-    };
-    
-    // Thumbnail image controls
-    window.currentSlide = function(n) {
-        showSlides(slideIndex = n);
-    };
-    
-    function showSlides(n) {
-        let i;
-        let slides = document.getElementsByClassName("slide");
-        let dots = document.getElementsByClassName("dot");
-        
-        if (slides.length === 0) {
-            console.error("No slides found!");
-            return;
-        }
-        
-        // Handle wrapping around
-        if (n > slides.length) {slideIndex = 1}
-        if (n < 1) {slideIndex = slides.length}
-        
-        // Hide all slides
-        for (i = 0; i < slides.length; i++) {
-            slides[i].style.display = "none";
-        }
-        
-        // Remove active class from all dots
-        for (i = 0; i < dots.length; i++) {
-            dots[i].className = dots[i].className.replace(" active", "");
-        }
-        
-        // Show the current slide and activate corresponding dot
-        console.log(`Showing slide ${slideIndex} of ${slides.length}`);
-        slides[slideIndex-1].style.display = "block";
-        
-        if (dots.length > 0 && slideIndex <= dots.length) {
-            dots[slideIndex-1].className += " active";
-        }
-    }
-    
-    // Initialize slideshow with these functions in the right order
-    preloadSlideImages();
-    showSlides(slideIndex);
-    setupSlideNavigation();
-    
-    // Wire up event listeners for arrow navigation
-    function setupSlideNavigation() {
-        // Auto advance slides every 6 seconds
-        setInterval(function() {
-            plusSlides(1);
-        }, 6000);
-        
-        // Wire up event listeners for arrow navigation
-        const prevArrow = document.querySelector('.prev');
-        const nextArrow = document.querySelector('.next');
-        
-        if (prevArrow) {
-            prevArrow.addEventListener('click', function() {
-                plusSlides(-1);
-            });
-        }
-        
-        if (nextArrow) {
-            nextArrow.addEventListener('click', function() {
-                plusSlides(1);
-            });
-        }
-        
-        // Make the dot controls work - ensure we preserve their styling
-        document.querySelectorAll('.dot').forEach(function(dot, index) {
-            dot.addEventListener('click', function() {
-                currentSlide(index + 1);
-            });
-        });
-    }
-    
-    // Theme toggle functionality
-    document.getElementById('theme-toggle-input').addEventListener('change', function() {
-        document.body.classList.toggle('dark-mode');
-    });
-
     // Check if user prefers dark mode
     if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
         document.body.classList.add('dark-mode');
         document.getElementById('theme-toggle-input').checked = true;
     }
+
+    // ==========================================
+    // COMPLETELY REWRITTEN SLIDESHOW CODE BELOW
+    // ==========================================
+    
+    // Slideshow configuration
+    const slideshowConfig = {
+        containerSelector: '#slideshow-container',
+        imageFolder: '/images/',
+        slideImages: [
+            { src: 'slide1.jpeg', caption: 'OCULAR' },
+            { src: 'slide2.jpeg', caption: 'OCULAR' },
+            { src: 'slide3.jpeg', caption: 'OCULAR' },
+            { src: 'slide4.jpeg', caption: 'OCULAR' },
+            { src: 'slide5.jpeg', caption: 'OCULAR' },
+            { src: 'slide6.jpeg', caption: 'OCULAR' }
+        ],
+        autoplayInterval: 6000, // 6 seconds between slides
+        transitionSpeed: 1500   // 1.5 seconds fade animation
+    };
+    
+    // Initialize the slideshow
+    const slideshowManager = (function() {
+        // Private variables
+        let currentSlideIndex = 0;
+        let autoplayTimer;
+        let slides = [];
+        let dots = [];
+        let container;
+        
+        // Create slideshow HTML structure
+        function buildSlideshow() {
+            container = document.querySelector(slideshowConfig.containerSelector);
+            if (!container) {
+                console.error('Slideshow container not found!');
+                return;
+            }
+            
+            // Clear the container
+            container.innerHTML = '';
+            
+            // Create slides
+            slideshowConfig.slideImages.forEach((image, index) => {
+                // Create slide
+                const slide = document.createElement('div');
+                slide.className = 'slide fade';
+                if (index === 0) slide.style.display = 'block'; // Show first slide
+                
+                // Create image
+                const img = document.createElement('img');
+                img.src = slideshowConfig.imageFolder + image.src;
+                img.alt = `Slide ${index + 1}`;
+                img.addEventListener('error', () => handleImageError(img, index));
+                
+                // Create caption
+                const caption = document.createElement('div');
+                caption.className = 'text';
+                caption.textContent = image.caption;
+                
+                // Add to slide
+                slide.appendChild(img);
+                slide.appendChild(caption);
+                container.appendChild(slide);
+                slides.push(slide);
+            });
+            
+            // Create navigation arrows
+            const prevArrow = document.createElement('a');
+            prevArrow.className = 'prev';
+            prevArrow.innerHTML = '&#10094;';
+            prevArrow.addEventListener('click', () => changeSlide(-1));
+            
+            const nextArrow = document.createElement('a');
+            nextArrow.className = 'next';
+            nextArrow.innerHTML = '&#10095;';
+            nextArrow.addEventListener('click', () => changeSlide(1));
+            
+            container.appendChild(prevArrow);
+            container.appendChild(nextArrow);
+            
+            // Create dot indicators
+            const dotsContainer = document.createElement('div');
+            dotsContainer.className = 'dots-container';
+            
+            slideshowConfig.slideImages.forEach((_, index) => {
+                const dot = document.createElement('span');
+                dot.className = index === 0 ? 'dot active' : 'dot';
+                dot.addEventListener('click', () => goToSlide(index));
+                dotsContainer.appendChild(dot);
+                dots.push(dot);
+            });
+            
+            container.appendChild(dotsContainer);
+        }
+        
+        // Change slide by a relative number
+        function changeSlide(n) {
+            goToSlide(currentSlideIndex + n);
+        }
+        
+        // Go to a specific slide
+        function goToSlide(index) {
+            // Reset autoplay timer
+            if (autoplayTimer) {
+                clearInterval(autoplayTimer);
+                startAutoplay();
+            }
+            
+            // Handle wrapping around
+            if (index >= slides.length) index = 0;
+            if (index < 0) index = slides.length - 1;
+            
+            // Hide all slides
+            slides.forEach(slide => {
+                slide.style.display = 'none';
+            });
+            
+            // Remove active class from all dots
+            dots.forEach(dot => {
+                dot.className = dot.className.replace(' active', '');
+            });
+            
+            // Show the current slide and activate the corresponding dot
+            slides[index].style.display = 'block';
+            dots[index].className += ' active';
+            
+            currentSlideIndex = index;
+        }
+        
+        // Handle image loading error
+        function handleImageError(img, index) {
+            console.error(`Failed to load image for slide ${index + 1}: ${img.src}`);
+            
+            // Try fallback with different extensions
+            const originalSrc = img.src;
+            const filename = originalSrc.substring(originalSrc.lastIndexOf('/') + 1);
+            const basename = filename.substring(0, filename.lastIndexOf('.'));
+            
+            // Try loading with alternative extensions
+            tryAlternativeExtensions(img, basename, 0);
+        }
+        
+        // Try different file extensions if the original one fails
+        function tryAlternativeExtensions(img, basename, attemptIndex) {
+            const extensions = ['.jpeg', '.jpg', '.png', '.webp'];
+            
+            if (attemptIndex >= extensions.length) {
+                // All extensions failed, use fallback
+                img.src = 'https://via.placeholder.com/1920x1080/0F52BA/FFFFFF?text=Image+Not+Found';
+                img.onerror = null; // Prevent further errors
+                return;
+            }
+            
+            const newSrc = slideshowConfig.imageFolder + basename + extensions[attemptIndex];
+            console.log(`Trying alternative extension: ${newSrc}`);
+            
+            const tempImg = new Image();
+            tempImg.onload = function() {
+                img.src = newSrc;
+                img.onerror = null;
+            };
+            
+            tempImg.onerror = function() {
+                // Try next extension
+                tryAlternativeExtensions(img, basename, attemptIndex + 1);
+            };
+            
+            tempImg.src = newSrc;
+        }
+        
+        // Start the autoplay function
+        function startAutoplay() {
+            autoplayTimer = setInterval(() => {
+                changeSlide(1);
+            }, slideshowConfig.autoplayInterval);
+        }
+        
+        // Initialize the slideshow
+        function init() {
+            buildSlideshow();
+            startAutoplay();
+            
+            // Pause autoplay when the tab is not visible
+            document.addEventListener('visibilitychange', () => {
+                if (document.hidden) {
+                    clearInterval(autoplayTimer);
+                } else {
+                    startAutoplay();
+                }
+            });
+        }
+        
+        // Public methods
+        return {
+            init,
+            next: () => changeSlide(1),
+            prev: () => changeSlide(-1),
+            goTo: goToSlide
+        };
+    })();
+    
+    // Initialize the slideshow
+    slideshowManager.init();
 });
-
-// Next/previous controls - make sure these are globally accessible
-window.plusSlides = function(n) {
-    showSlides(slideIndex += n);
-}
-
-// Thumbnail image controls - make sure these are globally accessible
-window.currentSlide = function(n) {
-    showSlides(slideIndex = n);
-}
-
-function showSlides(n) {
-    let i;
-    let slides = document.getElementsByClassName("slide");
-    let dots = document.getElementsByClassName("dot");
-
-    if (slides.length === 0) {
-        console.error("No slides found!");
-        return;
-    }
-
-    // Handle wrapping around
-    if (n > slides.length) { slideIndex = 1 }
-    if (n < 1) { slideIndex = slides.length }
-
-    // Hide all slides
-    for (i = 0; i < slides.length; i++) {
-        slides[i].style.display = "none";
-    }
-
-    // Remove active class from all dots
-    for (i = 0; i < dots.length; i++) {
-        dots[i].className = dots[i].className.replace(" active", "");
-    }
-
-    // Show the current slide and activate corresponding dot
-    slides[slideIndex - 1].style.display = "block";
-    if (dots.length > 0) {
-        dots[slideIndex - 1].className += " active";
-    }
-}
-
-// Initialize slideshow with these functions in the right order
-preloadSlideImages();
-showSlides(slideIndex);
-
-function setupSlideNavigation() {
-    // Auto advance slides every 6 seconds
-    setInterval(function() {
-        plusSlides(1);
-    }, 6000);
-
-    // Wire up event listeners for arrow navigation
-    const prevArrow = document.querySelector('.prev');
-    const nextArrow = document.querySelector('.next');
-
-    if (prevArrow) {
-        prevArrow.addEventListener('click', function() {
-            plusSlides(-1);
-        });
-    }
-
-    if (nextArrow) {
-        nextArrow.addEventListener('click', function() {
-            plusSlides(1);
-        });
-    }
-
-    // Make the dot controls work - ensure we preserve their styling
-    document.querySelectorAll('.dot').forEach(function(dot, index) {
-        dot.addEventListener('click', function() {
-            currentSlide(index + 1);
-        });
-    });
-}
-
-setupSlideNavigation();
