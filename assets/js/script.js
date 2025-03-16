@@ -105,9 +105,38 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // Slideshow functionality
+    // Enhanced slideshow functionality with loading indicators
     let slideIndex = 1;
-    showSlides(slideIndex);
+
+    // Function to preload images for better performance
+    function preloadSlideImages() {
+        const slides = document.querySelectorAll('.slide img');
+        slides.forEach(img => {
+            // Add loading class to slide during image load
+            const slide = img.parentElement;
+            slide.classList.add('loading');
+            
+            // Create new image object to preload
+            const preloadImg = new Image();
+            preloadImg.src = img.src;
+            
+            // Remove loading class when image is loaded
+            preloadImg.onload = () => {
+                slide.classList.remove('loading');
+            };
+            
+            // Handle errors gracefully
+            preloadImg.onerror = () => {
+                slide.classList.remove('loading');
+                img.alt = 'Image failed to load';
+                // Optionally add a placeholder image
+                // img.src = '/assets/placeholder.jpg';
+            };
+        });
+    }
+
+    // Call preload when DOM is ready
+    document.addEventListener('DOMContentLoaded', preloadSlideImages);
 
     // Next/previous controls
     function plusSlides(n) {
@@ -139,14 +168,33 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         // Show the current slide and activate corresponding dot
-        slides[slideIndex-1].style.display = "block";
-        dots[slideIndex-1].className += " active";
+        if (slides.length > 0) {
+            slides[slideIndex-1].style.display = "block";
+            
+            if (dots.length > 0 && slideIndex <= dots.length) {
+                dots[slideIndex-1].className += " active";
+            }
+        }
     }
 
-    // Auto advance slides every 5 seconds
-    setInterval(function() {
-        plusSlides(1);
-    }, 5000);
+    // Initialize the slideshow
+    document.addEventListener('DOMContentLoaded', () => {
+        showSlides(slideIndex);
+        
+        // Auto advance slides every 6 seconds
+        setInterval(() => {
+            plusSlides(1);
+        }, 6000);
+        
+        // Make the arrow controls work
+        document.querySelector('.prev').addEventListener('click', () => plusSlides(-1));
+        document.querySelector('.next').addEventListener('click', () => plusSlides(1));
+        
+        // Make the dot controls work
+        document.querySelectorAll('.dot').forEach((dot, index) => {
+            dot.addEventListener('click', () => currentSlide(index + 1));
+        });
+    });
 
     // Theme toggle functionality
     document.getElementById('theme-toggle-input').addEventListener('change', function() {

@@ -754,3 +754,65 @@ body.dark-mode .toggle-icon::before {
 .active, .dot:hover {
     background-color: #717171;
 }
+
+/* Improving slideshow image display for external images */
+.fullscreen-slideshow .slide img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* Keeps aspect ratio while covering the container */
+    object-position: center; /* Centers the image */
+    transition: transform 0.5s ease; /* Smooth zoom effect on hover */
+}
+
+.fullscreen-slideshow .slide:hover img {
+    transform: scale(1.02); /* Subtle zoom effect on hover */
+}
+
+/* Ensure loading images don't break layout */
+.fullscreen-slideshow .slide {
+    background-color: #000; /* Dark background while images load */
+    position: relative;
+}
+
+/* Optional loading indicator for images */
+.fullscreen-slideshow .slide::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 40px;
+    height: 40px;
+    border: 4px solid rgba(255, 255, 255, 0.3);
+    border-top: 4px solid #fff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    z-index: 0;
+    opacity: 0; /* Hidden by default */
+    transition: opacity 0.3s;
+}
+
+.fullscreen-slideshow .slide.loading::before {
+    opacity: 1; /* Show loader when image is loading */
+}
+
+@keyframes spin {
+    0% { transform: translate(-50%, -50%) rotate(0deg); }
+    100% { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+/* Improve text display on slides */
+.text {
+    color: #ffffff;
+    font-size: 18px;
+    font-weight: bold;
+    padding: 8px 16px;
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    text-align: right;
+    background-color: rgba(0, 0, 0, 0.6);
+    border-radius: 5px;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+    letter-spacing: 1px;
+}
