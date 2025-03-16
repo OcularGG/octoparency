@@ -13,6 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
         '/assets/ocular-logos/logo9.png'
     ];
     let currentLogoIndex = 0;
+    let isTransitioning = false; // Add flag to prevent overlapping transitions
     
     // Preload all images for smoother transitions
     const preloadImages = () => {
@@ -48,6 +49,9 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Clean, simple crossfade transition
     const transitionLogos = () => {
+        if (isTransitioning) return; // Prevent overlapping transitions
+        isTransitioning = true;
+        
         // Create temporary container for new image
         const tempImg = new Image();
         tempImg.src = logos[(currentLogoIndex + 1) % logos.length];
@@ -62,7 +66,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 currentLogoIndex = (currentLogoIndex + 1) % logos.length;
                 logo.src = logos[currentLogoIndex];
                 logo.style.opacity = '1';
+                
+                // Reset transition flag after complete
+                setTimeout(() => {
+                    isTransitioning = false;
+                }, 1000);
             }, 1000);
+        };
+        
+        // Add error handling in case image fails to load
+        tempImg.onerror = () => {
+            console.error('Failed to load next logo image:', tempImg.src);
+            isTransitioning = false; // Release transition lock on error
         };
     };
     
@@ -75,7 +90,13 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Check for saved theme preference or default to light
     const savedTheme = localStorage.getItem('theme');
-    if (savedTheme === 'dark') {
+    
+    // First check user's preferred color scheme if no saved preference exists
+    if (!savedTheme && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        body.classList.add('dark-mode');
+        themeToggleInput.checked = true;
+        localStorage.setItem('theme', 'dark');
+    } else if (savedTheme === 'dark') {
         body.classList.add('dark-mode');
         themeToggleInput.checked = true;
     }
@@ -105,13 +126,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // Check if user prefers dark mode - moved to be with other theme code
-    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches && !localStorage.getItem('theme')) {
-        body.classList.add('dark-mode');
-        themeToggleInput.checked = true;
-        localStorage.setItem('theme', 'dark');
-    }
-
     // Sidebar collapse functionality - fixed variable conflict
     const sidebarToggle = document.getElementById('sidebar-toggle');
     
@@ -139,8 +153,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Toggle sidebar
     if (sidebarToggle) {
         sidebarToggle.addEventListener('click', () => {
-            isCollapsed = !body.classList.contains('sidebar-collapsed'); // Toggle the boolean value
+            // Correctly toggle the sidebar and update isCollapsed
             body.classList.toggle('sidebar-collapsed');
+            isCollapsed = body.classList.contains('sidebar-collapsed');
             
             // Update the toggle button icon
             updateToggleButtonIcon(isCollapsed);
@@ -204,6 +219,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let slides = [];
         let dots = [];
         let container;
+        let isAutoplayPaused = false;
         
         // Create slideshow HTML structure
         function buildSlideshow() {
@@ -354,8 +370,15 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Start the autoplay function
         function startAutoplay() {
+            // Clear any existing timer first to prevent multiple intervals
+            if (autoplayTimer) {
+                clearInterval(autoplayTimer);
+            }
+            
             autoplayTimer = setInterval(() => {
-                changeSlide(1);
+                if (!isAutoplayPaused) {
+                    changeSlide(1);
+                }
             }, slideshowConfig.autoplayInterval);
         }
         
@@ -367,11 +390,22 @@ document.addEventListener('DOMContentLoaded', () => {
             // Pause autoplay when the tab is not visible
             document.addEventListener('visibilitychange', () => {
                 if (document.hidden) {
-                    clearInterval(autoplayTimer);
+                    isAutoplayPaused = true;
                 } else {
-                    startAutoplay();
+                    isAutoplayPaused = false;
                 }
             });
+
+            // Also pause autoplay on hover for better user experience
+            if (container) {
+                container.addEventListener('mouseenter', () => {
+                    isAutoplayPaused = true;
+                });
+                
+                container.addEventListener('mouseleave', () => {
+                    isAutoplayPaused = false;
+                });
+            }
 
             // Add touch swipe support for mobile devices
             if (container) {
