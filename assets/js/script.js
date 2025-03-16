@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // Simplified logo transition logic - synchronized timing
+    // Logo transition with CSS animation synchronization
     const logo = document.querySelector('.logo');
     const logos = [
         '/assets/ocular-logos/logo1.png',
@@ -24,19 +24,29 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     preloadImages();
     
-    // Remove any existing clones
-    const existingClone = document.querySelector('.logo-clone');
-    if (existingClone) {
-        existingClone.parentNode.removeChild(existingClone);
-    }
-    
-    // Track animation state for coordinating with CSS animations
-    const sidebarLine = document.querySelector('.sidebar::after');
-    const siteTitle = document.querySelector('.site-title');
+    // Reset CSS animations to sync with logo changes
+    const resetAnimations = () => {
+        const sidebar = document.querySelector('.sidebar');
+        const siteTitle = document.querySelector('.site-title');
+        
+        // Force a reflow to restart animations
+        sidebar.style.animation = 'none';
+        siteTitle.style.animation = 'none';
+        
+        // Trigger reflow
+        void sidebar.offsetWidth;
+        void siteTitle.offsetWidth;
+        
+        // Restart animations synchronized with current logo
+        sidebar.style.animation = `logoColorShift 4.5s steps(1) infinite`;
+        sidebar.style.animationDelay = `0s`;
+        siteTitle.style.animation = `logoTextColorShift 4.5s steps(1) infinite`;
+        siteTitle.style.animationDelay = `0s`;
+    };
     
     // Clean, simple crossfade transition
     const transitionLogos = () => {
-        if (isTransitioning) return; // Prevent overlapping transitions
+        if (isTransitioning) return;
         isTransitioning = true;
         
         // Create temporary container for new image
@@ -54,11 +64,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 logo.src = logos[currentLogoIndex];
                 logo.style.opacity = '1';
                 
+                // Reset animations to sync with the logo change
+                resetAnimations();
+                
                 // Reset transition flag after complete
                 setTimeout(() => {
                     isTransitioning = false;
-                }, 1000);
-            }, 1000);
+                }, 500);
+            }, 500);
         };
         
         tempImg.onerror = () => {
@@ -67,7 +80,10 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     };
     
-    // Set exact interval to 4.5 seconds (4500ms) to match CSS animations
+    // Call resetAnimations on page load to ensure initial sync
+    resetAnimations();
+    
+    // Start the logo transition loop
     setInterval(transitionLogos, 4500);
 
     // Dark mode toggle - fixed potential duplicate listeners
