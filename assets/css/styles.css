@@ -16,7 +16,7 @@ body {
 
 /* Light mode (default) */
 :root {
-    --sidebar-bg-color: #333333; /* Grey color for sidebar */
+    --sidebar-bg-color: #222222; /* Darker grey color for sidebar - changed from #333333 */
     --sidebar-border-gradient: linear-gradient(to right, #0F52BA, #1E90FF); /* Gradient line */
     --main-bg-color: #f0f0f0;
     --text-color: #333333;
@@ -26,7 +26,7 @@ body {
 
 /* Dark mode */
 body.dark-mode {
-    --sidebar-bg-color: #222222; /* Darker grey for dark mode */
+    --sidebar-bg-color: #1a1a1a; /* Even darker grey for dark mode - changed from #222222 */
     --sidebar-border-gradient: linear-gradient(to right, #0a2f68, #0d4c8b); /* Darker gradient line */
     --main-bg-color: #222222;
     --text-color: #ffffff;
@@ -219,23 +219,34 @@ body.dark-mode .toggle-icon::before {
     max-height: 100vh;
 }
 
+/* Redesigned login button */
 .login-button {
     position: absolute;
     top: 20px;
     right: 20px;
-    background-color: var(--btn-color);
+    background-color: transparent; /* Changed from solid color to transparent */
     color: white;
-    border: none;
-    padding: 10px 20px;
+    border: 2px solid var(--btn-color); /* Added border */
+    padding: 10px 25px; /* Wider padding */
     cursor: pointer;
-    font-size: 16px;
-    border-radius: 5px;
-    transition: background-color 0.3s;
+    font-size: 14px; /* Slightly smaller text */
+    font-weight: 600; /* Made text bolder */
+    border-radius: 50px; /* Rounded corners */
+    transition: all 0.3s ease; /* Smooth transition for all properties */
     z-index: 10; /* Ensure it appears above the slideshow */
+    letter-spacing: 1px; /* Added letter spacing */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Added subtle shadow */
 }
 
 .login-button:hover {
-    background-color: var(--btn-hover-color);
+    background-color: var(--btn-color); /* Fill with color on hover */
+    transform: translateY(-2px); /* Slight lift effect */
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15); /* Enhanced shadow on hover */
+}
+
+.login-button:active {
+    transform: translateY(1px); /* Press down effect when clicked */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Reduced shadow when pressed */
 }
 
 .content-wrapper {
