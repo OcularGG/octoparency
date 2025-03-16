@@ -45,6 +45,8 @@ body.dark-mode {
     height: 100vh;
     position: relative;
     justify-content: space-between; /* Better distribution of space */
+    transition: transform 0.3s ease, width 0.3s ease, padding 0.3s ease; /* Add transition for smooth collapse */
+    z-index: 50; /* Ensure sidebar appears above other content */
 }
 
 .sidebar::after {
@@ -217,6 +219,7 @@ body.dark-mode .toggle-icon::before {
     overflow: hidden; /* Prevent scrollbars */
     margin: 0;
     max-height: 100vh;
+    transition: margin-left 0.3s ease, width 0.3s ease;
 }
 
 /* Redesigned login button */
@@ -933,4 +936,397 @@ body.dark-mode .toggle-icon::before {
     font-size: 16px;
     z-index: 100;
     text-align: center;
+}
+
+/* Sidebar collapse functionality */
+body.sidebar-collapsed .sidebar {
+    transform: translateX(-100%); /* Move sidebar off-screen */
+    box-shadow: none;
+}
+
+/* Main content adjusts when sidebar is collapsed */
+body.sidebar-collapsed .main-content {
+    margin-left: 0;
+    width: 100%;
+}
+
+/* Sidebar toggle button */
+.sidebar-toggle {
+    position: absolute;
+    right: -42px; /* Position outside the sidebar */
+    top: 20px;
+    width: 42px;
+    height: 42px;
+    background-color: var(--sidebar-bg-color);
+    border: none;
+    border-radius: 0 5px 5px 0;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 5px;
+    z-index: 51;
+    box-shadow: 3px 0 5px rgba(0, 0, 0, 0.1);
+    transition: background-color 0.3s;
+}
+
+.sidebar-toggle:hover {
+    background-color: var(--btn-hover-color);
+}
+
+/* Toggle button hamburger icon */
+.toggle-icon-bar {
+    width: 22px;
+    height: 2px;
+    background-color: white;
+    border-radius: 2px;
+    transition: transform 0.3s, opacity 0.3s;
+}
+
+/* Animated hamburger icon for collapsed state */
+body.sidebar-collapsed .toggle-icon-bar:nth-child(1) {
+    transform: translateY(7px) rotate(45deg);
+}
+
+body.sidebar-collapsed .toggle-icon-bar:nth-child(2) {
+    opacity: 0;
+}
+
+body.sidebar-collapsed .toggle-icon-bar:nth-child(3) {
+    transform: translateY(-7px) rotate(-45deg);
+}
+
+/* Responsive layout for small screens */
+@media screen and (max-width: 768px) {
+    .sidebar {
+        width: 200px;
+    }
+    
+    body.sidebar-collapsed .sidebar-toggle {
+        right: -42px; /* Keep the button visible when collapsed on mobile */
+    }
+}
+
+/* Media Queries for Responsive Design */
+@media screen and (max-width: 1200px) {
+    .sidebar {
+        width: 220px;
+    }
+    
+    .site-title {
+        font-size: 22px;
+    }
+}
+
+@media screen and (max-width: 992px) {
+    .sidebar {
+        width: 200px;
+    }
+    
+    .logo {
+        width: 110px;
+    }
+    
+    .site-title {
+        font-size: 20px;
+    }
+    
+    .sidebar-nav .nav-link {
+        padding: 8px;
+    }
+    
+    .login-button {
+        padding: 8px 20px;
+        font-size: 13px;
+    }
+}
+
+@media screen and (max-width: 768px) {
+    /* Modify layout for tablets */
+    body {
+        flex-direction: column;
+    }
+    
+    .sidebar {
+        width: 100%;
+        height: auto;
+        min-height: unset;
+        flex-direction: row;
+        padding: 10px 20px;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .sidebar::after {
+        width: 100%;
+        height: 4px;
+        top: auto;
+        bottom: 0;
+        left: 0;
+        right: 0;
+    }
+    
+    .logo-container {
+        min-height: unset;
+        margin-bottom: 0;
+        flex: 0 0 auto;
+    }
+    
+    .logo {
+        width: 60px;
+    }
+    
+    .site-title {
+        margin: 0 10px;
+        font-size: 18px;
+        text-align: left;
+    }
+    
+    /* Hide sidebar nav on mobile but make it expandable */
+    .sidebar-nav {
+        position: fixed;
+        top: 70px;
+        left: 0;
+        width: 100%;
+        background-color: var(--sidebar-bg-color);
+        transform: translateY(-100%);
+        transition: transform 0.3s ease;
+        opacity: 0;
+        z-index: 49;
+        margin-top: 0;
+        padding: 10px 0;
+    }
+    
+    .sidebar-nav.expanded {
+        transform: translateY(0);
+        opacity: 1;
+    }
+    
+    .sidebar-nav ul {
+        padding: 0 20px;
+    }
+    
+    /* Mobile menu toggle */
+    .mobile-menu-toggle {
+        display: block;
+        background: none;
+        border: none;
+        color: white;
+        font-size: 24px;
+        cursor: pointer;
+        margin-left: auto;
+        margin-right: 15px;
+    }
+    
+    /* Adjust social buttons */
+    .social-buttons-container {
+        flex: 0 0 auto;
+        margin: 0;
+        justify-content: flex-end;
+        display: none; /* Hide on mobile - show in expanded menu instead */
+    }
+    
+    .sidebar-nav .social-buttons-container {
+        display: flex;
+        margin: 15px 20px;
+    }
+    
+    /* Adjust main content */
+    .main-content {
+        height: calc(100vh - 70px);
+        max-height: calc(100vh - 70px);
+    }
+    
+    /* When sidebar is collapsed on mobile */
+    body.sidebar-collapsed .sidebar {
+        transform: translateY(-100%); /* Slide up instead of left */
+        height: 70px;
+    }
+    
+    body.sidebar-collapsed .main-content {
+        height: 100vh;
+        max-height: 100vh;
+    }
+    
+    /* Adjust sidebar toggle for mobile */
+    .sidebar-toggle {
+        right: 10px;
+        top: 15px;
+    }
+    
+    /* Adjust login button */
+    .login-button {
+        top: 80px;
+    }
+    
+    /* Move theme toggle */
+    .theme-toggle-floating {
+        bottom: 20px;
+        right: 10px;
+    }
+    
+    /* Adjust slideshow text */
+    .text {
+        font-size: 16px;
+        padding: 6px 12px;
+        bottom: 80px;
+        right: 10px;
+    }
+    
+    /* Adjust slideshow controls */
+    .dots-container {
+        bottom: 15px;
+        left: 10px;
+    }
+    
+    .dot {
+        height: 8px;
+        width: 18px;
+        margin: 0 3px;
+    }
+    
+    .active, .dot:hover {
+        width: 22px;
+    }
+    
+    .prev, .next {
+        font-size: 18px;
+        padding: 8px 16px;
+    }
+}
+
+@media screen and (max-width: 576px) {
+    /* Further adjustments for smaller mobile screens */
+    .sidebar {
+        padding: 10px;
+    }
+    
+    .logo {
+        width: 50px;
+    }
+    
+    .site-title {
+        font-size: 16px;
+        margin: 0 5px;
+    }
+    
+    .login-button {
+        top: 80px;
+        right: 10px;
+        padding: 6px 15px;
+        font-size: 12px;
+    }
+    
+    /* Optimize slideshow */
+    .text {
+        font-size: 14px;
+        padding: 4px 10px;
+        bottom: 70px;
+    }
+    
+    .dot {
+        height: 6px;
+        width: 16px;
+        margin: 0 2px;
+    }
+    
+    .active, .dot:hover {
+        width: 20px;
+    }
+    
+    .prev, .next {
+        font-size: 16px;
+        padding: 6px 12px;
+    }
+}
+
+@media screen and (max-width: 375px) {
+    /* Adjustments for smallest screens */
+    .site-title {
+        font-size: 14px;
+        max-width: 120px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    
+    .login-button {
+        padding: 5px 12px;
+        font-size: 11px;
+    }
+    
+    .dot {
+        width: 14px;
+        margin: 0 2px;
+    }
+    
+    .active, .dot:hover {
+        width: 18px;
+    }
+}
+
+/* Fix for better slide positioning on mobile devices */
+@media screen and (max-height: 600px) {
+    .text {
+        bottom: 50px;
+    }
+    
+    .dots-container {
+        bottom: 10px;
+    }
+}
+
+/* Style for new mobile menu toggle */
+.mobile-menu-toggle {
+    display: none; /* Hidden by default, shown in mobile media query */
+    background: none;
+    border: none;
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+}
+
+.mobile-menu-toggle .bar {
+    display: block;
+    width: 24px;
+    height: 2px;
+    margin: 5px 0;
+    background-color: white;
+    transition: 0.3s;
+}
+
+.mobile-menu-toggle.open .bar:nth-child(1) {
+    transform: rotate(-45deg) translate(-5px, 6px);
+}
+
+.mobile-menu-toggle.open .bar:nth-child(2) {
+    opacity: 0;
+}
+
+.mobile-menu-toggle.open .bar:nth-child(3) {
+    transform: rotate(45deg) translate(-5px, -6px);
+}
+
+/* Ensure sidebar toggle is properly styled */
+body.sidebar-collapsed .sidebar-toggle {
+    position: fixed;
+    right: 10px;
+    top: 10px;
+}
+
+/* Portrait tablets and phones in landscape */
+@media screen and (min-width: 576px) and (max-width: 768px) and (orientation: landscape) {
+    .sidebar {
+        padding: 10px;
+        height: 60px;
+    }
+    
+    .main-content {
+        height: calc(100vh - 60px);
+    }
+    
+    .login-button {
+        top: 70px;
+    }
 }

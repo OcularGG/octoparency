@@ -69,9 +69,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Start transitions with a cinematic timing
     setInterval(transitionLogos, 4500);
 
-    // Dark mode toggle
+    // Dark mode toggle - fixed potential duplicate listeners
     const themeToggleInput = document.getElementById('theme-toggle-input');
-    const body = document.body;
+    const body = document.body; // Using this instance of body throughout
     
     // Check for saved theme preference or default to light
     const savedTheme = localStorage.getItem('theme');
@@ -80,7 +80,7 @@ document.addEventListener('DOMContentLoaded', () => {
         themeToggleInput.checked = true;
     }
     
-    // Theme toggle functionality
+    // Theme toggle functionality - single event listener
     themeToggleInput.addEventListener('change', () => {
         // Toggle dark mode class
         body.classList.toggle('dark-mode');
@@ -105,10 +105,34 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // Check if user prefers dark mode
-    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-        document.body.classList.add('dark-mode');
-        document.getElementById('theme-toggle-input').checked = true;
+    // Check if user prefers dark mode - moved to be with other theme code
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches && !localStorage.getItem('theme')) {
+        body.classList.add('dark-mode');
+        themeToggleInput.checked = true;
+        localStorage.setItem('theme', 'dark');
+    }
+
+    // Sidebar collapse functionality - fixed variable conflict
+    const sidebarToggle = document.getElementById('sidebar-toggle');
+    
+    // Check for saved sidebar state
+    const sidebarState = localStorage.getItem('sidebar-collapsed');
+    if (sidebarState === 'true') {
+        body.classList.add('sidebar-collapsed');
+    }
+    
+    // Toggle sidebar
+    if (sidebarToggle) {
+        sidebarToggle.addEventListener('click', () => {
+            body.classList.toggle('sidebar-collapsed');
+            
+            // Save preference to localStorage
+            const isCollapsed = body.classList.contains('sidebar-collapsed');
+            localStorage.setItem('sidebar-collapsed', isCollapsed);
+            
+            // Force resize event for slideshow to adjust
+            window.dispatchEvent(new Event('resize'));
+        });
     }
 
     // ==========================================
@@ -300,6 +324,63 @@ document.addEventListener('DOMContentLoaded', () => {
                     startAutoplay();
                 }
             });
+
+            // Add touch swipe support for mobile devices
+            if (container) {
+                let touchStartX = 0;
+                let touchEndX = 0;
+                
+                container.addEventListener('touchstart', (e) => {
+                    touchStartX = e.changedTouches[0].screenX;
+                }, false);
+                
+                container.addEventListener('touchend', (e) => {
+                    touchEndX = e.changedTouches[0].screenX;
+                    handleSwipe();
+                }, false);
+                
+                function handleSwipe() {
+                    const threshold = 50; // Minimum distance to register as swipe
+                    if (touchStartX - touchEndX > threshold) {
+                        // Swipe left - go to next slide
+                        changeSlide(1);
+                    } else if (touchEndX - touchStartX > threshold) {
+                        // Swipe right - go to previous slide
+                        changeSlide(-1);
+                    }
+                }
+            }
+            
+            // Call adjustLayout initially and on window resize
+            adjustLayout();
+            window.addEventListener('resize', adjustLayout);
+        }
+
+        // Add adjustLayout method for responsive handling
+        function adjustLayout() {
+            // Recalculate sizes after layout changes
+            if (container) {
+                const containerRect = container.getBoundingClientRect();
+                console.log(`Slideshow container size: ${containerRect.width}x${containerRect.height}`);
+                
+                // Adjust navigation arrows position for small screens
+                const prevArrow = container.querySelector('.prev');
+                const nextArrow = container.querySelector('.next');
+                
+                if (prevArrow && nextArrow) {
+                    if (containerRect.width < 576) {
+                        prevArrow.style.fontSize = '16px';
+                        nextArrow.style.fontSize = '16px';
+                        prevArrow.style.padding = '5px 10px';
+                        nextArrow.style.padding = '5px 10px';
+                    } else {
+                        prevArrow.style.fontSize = '';
+                        nextArrow.style.fontSize = '';
+                        prevArrow.style.padding = '';
+                        nextArrow.style.padding = '';
+                    }
+                }
+            }
         }
         
         // Public methods
@@ -307,10 +388,50 @@ document.addEventListener('DOMContentLoaded', () => {
             init,
             next: () => changeSlide(1),
             prev: () => changeSlide(-1),
-            goTo: goToSlide
+            goTo: goToSlide,
+            adjustLayout
         };
     })();
     
-    // Initialize the slideshow
+    // Initialize the slideshow only once
     slideshowManager.init();
+
+    // Single resize event listener that handles everything
+    window.addEventListener('resize', () => {
+        // Reset mobile menu state on larger screens
+        if (window.innerWidth > 768) {
+            const sidebarNav = document.getElementById('sidebar-nav');
+            const mobileMenuToggle = document.getElementById('mobile-menu-toggle');
+            
+            if (sidebarNav) sidebarNav.classList.remove('expanded');
+            if (mobileMenuToggle) mobileMenuToggle.classList.remove('open');
+        }
+        
+        // Adjust slideshow layout
+        if (slideshowManager && typeof slideshowManager.adjustLayout === 'function') {
+            slideshowManager.adjustLayout();
+        }
+    });
+
+    // Mobile menu toggle - single initialization
+    const mobileMenuToggle = document.getElementById('mobile-menu-toggle');
+    const sidebarNav = document.getElementById('sidebar-nav');
+    
+    if (mobileMenuToggle && sidebarNav) {
+        mobileMenuToggle.addEventListener('click', () => {
+            sidebarNav.classList.toggle('expanded');
+            mobileMenuToggle.classList.toggle('open');
+        });
+        
+        // Close mobile menu when a link is clicked
+        const navLinks = document.querySelectorAll('.sidebar-nav .nav-link');
+        navLinks.forEach(link => {
+            link.addEventListener('click', () => {
+                if (window.innerWidth <= 768) {
+                    sidebarNav.classList.remove('expanded');
+                    mobileMenuToggle.classList.remove('open');
+                }
+            });
+        });
+    }
 });
