@@ -162,11 +162,6 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Save preference to localStorage
             localStorage.setItem('sidebar-collapsed', isCollapsed);
-            
-            // Force slideshow to update its layout with delay to allow transition
-            if (slideshowManager && typeof slideshowManager.updateForSidebarToggle === 'function') {
-                slideshowManager.updateForSidebarToggle();
-            }
         });
     }
 
@@ -191,332 +186,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // ==========================================
-    // COMPLETELY REWRITTEN SLIDESHOW CODE BELOW
-    // ==========================================
-    
-    // Slideshow configuration
-    const slideshowConfig = {
-        containerSelector: '#slideshow-container',
-        imageFolder: '/images/',
-        slideImages: [
-            { src: 'slide1.jpeg', caption: 'OCULAR' },
-            { src: 'slide2.jpeg', caption: 'OCULAR' },
-            { src: 'slide3.jpeg', caption: 'OCULAR' },
-            { src: 'slide4.jpeg', caption: 'OCULAR' },
-            { src: 'slide5.jpeg', caption: 'OCULAR' },
-            { src: 'slide6.jpeg', caption: 'OCULAR' }
-        ],
-        autoplayInterval: 6000, // 6 seconds between slides
-        transitionSpeed: 1500   // 1.5 seconds fade animation
-    };
-    
-    // Initialize the slideshow
-    const slideshowManager = (function() {
-        // Private variables
-        let currentSlideIndex = 0;
-        let autoplayTimer;
-        let slides = [];
-        let dots = [];
-        let container;
-        let isAutoplayPaused = false;
-        
-        // Create slideshow HTML structure
-        function buildSlideshow() {
-            container = document.querySelector(slideshowConfig.containerSelector);
-            if (!container) {
-                console.error('Slideshow container not found!');
-                return;
-            }
-            
-            // Clear the container
-            container.innerHTML = '';
-            
-            // Create slides
-            slideshowConfig.slideImages.forEach((image, index) => {
-                // Create slide
-                const slide = document.createElement('div');
-                slide.className = 'slide fade';
-                if (index === 0) slide.style.display = 'block'; // Show first slide
-                
-                // Create image
-                const img = document.createElement('img');
-                img.src = slideshowConfig.imageFolder + image.src;
-                img.alt = `Slide ${index + 1}`;
-                img.addEventListener('error', () => handleImageError(img, index));
-                
-                // Create caption
-                const caption = document.createElement('div');
-                caption.className = 'text';
-                caption.textContent = image.caption;
-                
-                // Add to slide
-                slide.appendChild(img);
-                slide.appendChild(caption);
-                container.appendChild(slide);
-                slides.push(slide);
-            });
-            
-            // Create navigation arrows
-            const prevArrow = document.createElement('a');
-            prevArrow.className = 'prev';
-            prevArrow.innerHTML = '&#10094;';
-            prevArrow.addEventListener('click', () => changeSlide(-1));
-            
-            const nextArrow = document.createElement('a');
-            nextArrow.className = 'next';
-            nextArrow.innerHTML = '&#10095;';
-            nextArrow.addEventListener('click', () => changeSlide(1));
-            
-            container.appendChild(prevArrow);
-            container.appendChild(nextArrow);
-            
-            // Create dot indicators
-            const dotsContainer = document.createElement('div');
-            dotsContainer.className = 'dots-container';
-            
-            slideshowConfig.slideImages.forEach((_, index) => {
-                const dot = document.createElement('span');
-                dot.className = index === 0 ? 'dot active' : 'dot';
-                dot.addEventListener('click', () => goToSlide(index));
-                dotsContainer.appendChild(dot);
-                dots.push(dot);
-            });
-            
-            container.appendChild(dotsContainer);
-        }
-        
-        // Change slide by a relative number
-        function changeSlide(n) {
-            goToSlide(currentSlideIndex + n);
-        }
-        
-        // Go to a specific slide
-        function goToSlide(index) {
-            // Reset autoplay timer
-            if (autoplayTimer) {
-                clearInterval(autoplayTimer);
-                startAutoplay();
-            }
-            
-            // Handle wrapping around
-            if (index >= slides.length) index = 0;
-            if (index < 0) index = slides.length - 1;
-            
-            // Hide all slides
-            slides.forEach(slide => {
-                slide.style.display = 'none';
-            });
-            
-            // Remove active class from all dots
-            dots.forEach(dot => {
-                dot.className = dot.className.replace(' active', '');
-            });
-            
-            // Show the current slide and activate the corresponding dot
-            slides[index].style.display = 'block';
-            dots[index].className += ' active';
-            
-            currentSlideIndex = index;
-        }
-        
-        // Handle image loading error
-        function handleImageError(img, index) {
-            console.error(`Failed to load image for slide ${index + 1}: ${img.src}`);
-            
-            try {
-                // Try fallback with different extensions
-                const originalSrc = img.src;
-                const filename = originalSrc.substring(originalSrc.lastIndexOf('/') + 1);
-                const basename = filename.substring(0, filename.lastIndexOf('.'));
-                
-                // Try loading with alternative extensions
-                tryAlternativeExtensions(img, basename, 0);
-            } catch (e) {
-                console.error('Error handling image fallback:', e);
-                // Set a default fallback if all else fails
-                img.src = 'https://via.placeholder.com/1920x1080/0F52BA/FFFFFF?text=Image+Not+Found';
-                img.onerror = null;
-            }
-        }
-        
-        // Try different file extensions if the original one fails
-        function tryAlternativeExtensions(img, basename, attemptIndex) {
-            const extensions = ['.jpeg', '.jpg', '.png', '.webp'];
-            
-            if (attemptIndex >= extensions.length) {
-                // All extensions failed, use fallback
-                img.src = 'https://via.placeholder.com/1920x1080/0F52BA/FFFFFF?text=Image+Not+Found';
-                img.onerror = null; // Prevent further errors
-                return;
-            }
-            
-            const newSrc = slideshowConfig.imageFolder + basename + extensions[attemptIndex];
-            console.log(`Trying alternative extension: ${newSrc}`);
-            
-            const tempImg = new Image();
-            tempImg.onload = function() {
-                img.src = newSrc;
-                img.onerror = null;
-            };
-            
-            tempImg.onerror = function() {
-                // Try next extension
-                tryAlternativeExtensions(img, basename, attemptIndex + 1);
-            };
-            
-            tempImg.src = newSrc;
-        }
-        
-        // Start the autoplay function
-        function startAutoplay() {
-            // Clear any existing timer first to prevent multiple intervals
-            if (autoplayTimer) {
-                clearInterval(autoplayTimer);
-            }
-            
-            autoplayTimer = setInterval(() => {
-                if (!isAutoplayPaused) {
-                    changeSlide(1);
-                }
-            }, slideshowConfig.autoplayInterval);
-        }
-        
-        // Initialize the slideshow
-        function init() {
-            buildSlideshow();
-            startAutoplay();
-            
-            // Pause autoplay when the tab is not visible
-            document.addEventListener('visibilitychange', () => {
-                if (document.hidden) {
-                    isAutoplayPaused = true;
-                } else {
-                    isAutoplayPaused = false;
-                }
-            });
+    // Remove all slideshow code and related references
+    // (Removed COMPLETELY REWRITTEN SLIDESHOW CODE and REWRITTEN SLIDESHOW CODE sections)
 
-            // Also pause autoplay on hover for better user experience
-            if (container) {
-                container.addEventListener('mouseenter', () => {
-                    isAutoplayPaused = true;
-                });
-                
-                container.addEventListener('mouseleave', () => {
-                    isAutoplayPaused = false;
-                });
-            }
-
-            // Add touch swipe support for mobile devices
-            if (container) {
-                let touchStartX = 0;
-                let touchEndX = 0;
-                
-                container.addEventListener('touchstart', (e) => {
-                    touchStartX = e.changedTouches[0].screenX;
-                }, false);
-                
-                container.addEventListener('touchend', (e) => {
-                    touchEndX = e.changedTouches[0].screenX;
-                    handleSwipe();
-                }, false);
-                
-                function handleSwipe() {
-                    const threshold = 50; // Minimum distance to register as swipe
-                    if (touchStartX - touchEndX > threshold) {
-                        // Swipe left - go to next slide
-                        changeSlide(1);
-                    } else if (touchEndX - touchStartX > threshold) {
-                        // Swipe right - go to previous slide
-                        changeSlide(-1);
-                    }
-                }
-            }
-            
-            // Call adjustLayout initially and on window resize
-            adjustLayout();
-            window.addEventListener('resize', adjustLayout);
-        }
-
-        // Add adjustLayout method for responsive handling
-        function adjustLayout() {
-            // Recalculate sizes after layout changes
-            if (container) {
-                const containerRect = container.getBoundingClientRect();
-                console.log(`Slideshow container size: ${containerRect.width}x${containerRect.height}`);
-                
-                // Adjust navigation arrows position for small screens
-                const prevArrow = container.querySelector('.prev');
-                const nextArrow = container.querySelector('.next');
-                
-                if (prevArrow && nextArrow) {
-                    if (containerRect.width < 576) {
-                        prevArrow.style.fontSize = '16px';
-                        nextArrow.style.fontSize = '16px';
-                        prevArrow.style.padding = '5px 10px';
-                        nextArrow.style.padding = '5px 10px';
-                    } else {
-                        prevArrow.style.fontSize = '';
-                        nextArrow.style.fontSize = '';
-                        prevArrow.style.padding = '';
-                        nextArrow.style.padding = '';
-                    }
-                }
-            }
-        }
-
-        // Additional function to handle layout when sidebar is toggled
-        function updateForSidebarToggle() {
-            // Force recalculation of dimensions
-            if (container) {
-                setTimeout(() => {
-                    // Brief timeout allows DOM to update first
-                    const containerRect = container.getBoundingClientRect();
-                    console.log(`Updated slideshow: ${containerRect.width}x${containerRect.height}`);
-                    
-                    // Force redraw/repaint by triggering style recalculation
-                    container.style.display = 'none';
-                    container.offsetHeight; // This triggers reflow
-                    container.style.display = '';
-                    
-                    // Make sure images fill the space
-                    const slides = container.querySelectorAll('.slide');
-                    slides.forEach(slide => {
-                        const img = slide.querySelector('img');
-                        if (img) {
-                            img.style.width = '100%';
-                            img.style.height = '100%';
-                            img.style.objectFit = 'cover';
-                        }
-                    });
-                }, 300); // Small delay allows transition to complete
-            }
-        }
-        
-        // Public methods
-        return {
-            init,
-            next: () => changeSlide(1),
-            prev: () => changeSlide(-1),
-            goTo: goToSlide,
-            adjustLayout,
-            updateForSidebarToggle
-        };
-    })();
-    
-    // Initialize the slideshow only once
-    slideshowManager.init();
-
-    // Single resize event listener that handles everything
+    // In event listeners that referenced slideshowManager, remove or comment out calls:
     window.addEventListener('resize', () => {
-        // Removed automatic mobile menu state reset to preserve the selected sidebar state
-
-        // Adjust slideshow layout
-        if (slideshowManager && typeof slideshowManager.adjustLayout === 'function') {
-            slideshowManager.adjustLayout();
-        }
-        
-        // Update sidebar toggle icon after resize in case layout changes affect its visibility
+        // Removed slideshow layout adjustment call (static image remains unchanged)
         const sidebarToggle = document.getElementById('sidebar-toggle');
         if (sidebarToggle) {
             updateToggleButtonIcon(document.body.classList.contains('sidebar-collapsed'));
@@ -542,6 +217,42 @@ document.addEventListener('DOMContentLoaded', () => {
                     mobileMenuToggle.classList.remove('open');
                 }
             });
+        });
+    }
+});
+
+// Insert new static image in the slideshow container.
+// This code creates a static image on the right side of the website.
+(function initStaticImage() {
+    const container = document.querySelector('#slideshow-container');
+    if (!container) {
+        console.error('Static image container not found!');
+        return;
+    }
+    container.innerHTML = '';
+    const imgElement = document.createElement('img');
+    imgElement.src = 'https://wallpapercave.com/wp/wp4224345.jpg';
+    imgElement.style.width = '100%';
+    imgElement.style.height = '100%';
+    imgElement.style.objectFit = 'cover';
+    container.appendChild(imgElement);
+})();
+
+/* ===== Extra merged functionality from the second script.js ===== */
+// If an element with id "theme-toggle-btn" exists, attach additional dark mode toggle behavior.
+document.addEventListener('DOMContentLoaded', () => {
+    const themeToggleBtn = document.getElementById('theme-toggle-btn');
+    if (themeToggleBtn) {
+        if (document.body.classList.contains('dark-mode')) {
+            themeToggleBtn.textContent = 'Light Mode';
+        } else {
+            themeToggleBtn.textContent = 'Dark Mode';
+        }
+        themeToggleBtn.addEventListener('click', () => {
+            document.body.classList.toggle('dark-mode');
+            const isDark = document.body.classList.contains('dark-mode');
+            themeToggleBtn.textContent = isDark ? 'Light Mode' : 'Dark Mode';
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
         });
     }
 });
