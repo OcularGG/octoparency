@@ -115,13 +115,16 @@ document.addEventListener('DOMContentLoaded', () => {
     // Sidebar collapse functionality - fixed variable conflict
     const sidebarToggle = document.getElementById('sidebar-toggle');
     
-    // Check for saved sidebar state
+    // Check for saved sidebar state - default to expanded if no preference saved
     const sidebarState = localStorage.getItem('sidebar-collapsed');
     if (sidebarState === 'true') {
         body.classList.add('sidebar-collapsed');
         // Update icon for initial state
         updateToggleButtonIcon(true);
     } else {
+        // Ensure sidebar is expanded by default
+        body.classList.remove('sidebar-collapsed');
+        localStorage.setItem('sidebar-collapsed', 'false');
         // Update icon for initial state
         updateToggleButtonIcon(false);
     }
@@ -138,8 +141,10 @@ document.addEventListener('DOMContentLoaded', () => {
             // Save preference to localStorage
             localStorage.setItem('sidebar-collapsed', willBeCollapsed);
             
-            // Force resize event for slideshow to adjust
-            window.dispatchEvent(new Event('resize'));
+            // Force slideshow to update its layout with delay to allow transition
+            if (slideshowManager && typeof slideshowManager.updateForSidebarToggle === 'function') {
+                slideshowManager.updateForSidebarToggle();
+            }
         });
     }
 
@@ -149,17 +154,17 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if (toggleBars.length === 3) {
             if (isCollapsed) {
-                // Change to right-pointing arrow when collapsed
-                toggleBars[0].style.transform = 'translateY(0) rotate(-45deg)';
+                // Right-pointing arrow when collapsed (points to hidden sidebar)
+                toggleBars[0].style.transform = 'translateY(-6px) rotate(-45deg)';
                 toggleBars[1].style.opacity = '1';
-                toggleBars[1].style.transform = 'scaleX(0.8)';
-                toggleBars[2].style.transform = 'translateY(0) rotate(45deg)';
+                toggleBars[1].style.transform = 'scaleX(0.75)';
+                toggleBars[2].style.transform = 'translateY(6px) rotate(45deg)';
             } else {
-                // Change to left-pointing arrow when expanded
-                toggleBars[0].style.transform = 'translateY(0) rotate(45deg)';
+                // Left-pointing arrow when expanded (points to content)
+                toggleBars[0].style.transform = 'translateY(-6px) rotate(45deg)';
                 toggleBars[1].style.opacity = '1';
-                toggleBars[1].style.transform = 'scaleX(0.8)';
-                toggleBars[2].style.transform = 'translateY(0) rotate(-45deg)';
+                toggleBars[1].style.transform = 'scaleX(0.75)';
+                toggleBars[2].style.transform = 'translateY(6px) rotate(-45deg)';
             }
         }
     }
@@ -411,6 +416,34 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
         }
+
+        // Additional function to handle layout when sidebar is toggled
+        function updateForSidebarToggle() {
+            // Force recalculation of dimensions
+            if (container) {
+                setTimeout(() => {
+                    // Brief timeout allows DOM to update first
+                    const containerRect = container.getBoundingClientRect();
+                    console.log(`Updated slideshow: ${containerRect.width}x${containerRect.height}`);
+                    
+                    // Force redraw/repaint by triggering style recalculation
+                    container.style.display = 'none';
+                    container.offsetHeight; // This triggers reflow
+                    container.style.display = '';
+                    
+                    // Make sure images fill the space
+                    const slides = container.querySelectorAll('.slide');
+                    slides.forEach(slide => {
+                        const img = slide.querySelector('img');
+                        if (img) {
+                            img.style.width = '100%';
+                            img.style.height = '100%';
+                            img.style.objectFit = 'cover';
+                        }
+                    });
+                }, 300); // Small delay allows transition to complete
+            }
+        }
         
         // Public methods
         return {
@@ -418,7 +451,8 @@ document.addEventListener('DOMContentLoaded', () => {
             next: () => changeSlide(1),
             prev: () => changeSlide(-1),
             goTo: goToSlide,
-            adjustLayout
+            adjustLayout,
+            updateForSidebarToggle
         };
     })();
     

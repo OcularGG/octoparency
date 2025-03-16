@@ -948,6 +948,27 @@ body.sidebar-collapsed .sidebar {
 body.sidebar-collapsed .main-content {
     margin-left: 0;
     width: 100%;
+    background-color: var(--main-bg-color); /* Ensure background color is applied */
+}
+
+/* Ensure main content fills entire viewport when sidebar is collapsed */
+body.sidebar-collapsed .content-wrapper,
+body.sidebar-collapsed .fullscreen-slideshow,
+body.sidebar-collapsed .slideshow-container {
+    width: 100%;
+    height: 100%;
+    max-width: 100%;
+    max-height: 100vh;
+    background-color: var(--main-bg-color);
+}
+
+/* Keep sidebar toggle button visible and positioned correctly when collapsed */
+body.sidebar-collapsed .sidebar-toggle {
+    position: fixed; /* Change to fixed when sidebar is collapsed */
+    left: 0; /* Attach to left edge of screen */
+    right: auto; /* Remove right positioning */
+    border-radius: 0 5px 5px 0; /* Keep rounded corners on right side only */
+    z-index: 1000; /* Ensure it stays above all content */
 }
 
 /* Sidebar toggle button - repositioned to middle */
@@ -1323,5 +1344,17 @@ body.sidebar-collapsed .sidebar-toggle {
     
     .login-button {
         top: 70px;
+    }
+    
+    .sidebar-toggle {
+        top: 50%; /* Keep in middle for mobile */
+        right: -36px; /* Slightly smaller for mobile */
+        width: 36px;
+        height: 36px;
+    }
+    
+    body.sidebar-collapsed .sidebar-toggle {
+        top: 50%;
+        left: 0;
     }
 }
