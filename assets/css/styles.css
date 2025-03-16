@@ -688,6 +688,11 @@ body.dark-mode .toggle-icon::before {
   fill: url(#github-gradient); /* GitHub gradient */
 }
 
+/* New Albion button hover effect */
+.albion-btn:hover img {
+  filter: url(#albion-gradient); /* Albion gradient */
+}
+
 /* Remove background elements that are no longer needed */
 .BG {
   display: none;
@@ -1344,4 +1349,26 @@ body.sidebar-collapsed .sidebar-toggle {
 /* Optionally adjust main-content when sidebar is collapsed */
 body.sidebar-collapsed .main-content {
     margin-left: 0;
+}
+
+/* Control visibility of desktop vs mobile social buttons */
+.desktop-only {
+    display: flex; /* Show by default (desktop view) */
+}
+
+.mobile-only {
+    display: none; /* Hide by default (desktop view) */
+}
+
+/* Update media query to swap visibility */
+@media screen and (max-width: 768px) {
+    /* Switch social buttons visibility */
+    .desktop-only {
+        display: none;
+    }
+    
+    .sidebar-nav .social-buttons-container.mobile-only {
+        display: flex;
+        margin: 15px 20px;
+    }
 }
