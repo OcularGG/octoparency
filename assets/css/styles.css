@@ -668,7 +668,7 @@ body.dark-mode .toggle-icon::before {
 }
 
 /* Make Albion button image match SVG icon sizing and styling */
-.Btn img {
+.Btn img.albion-logo {
   transition: transform 0.3s ease, filter 0.3s ease;
   filter: brightness(0) invert(1); /* Make image white */
   width: 20px; /* Reduced from 24px */
@@ -698,7 +698,7 @@ body.dark-mode .toggle-icon::before {
 }
 
 /* New Albion button hover effect - blue gradient instead of gold */
-.albion-btn:hover img {
+.albion-btn:hover img.albion-logo {
   transform: scale(1.15);
   filter: brightness(0) invert(0.8) sepia(1) saturate(5) hue-rotate(190deg); /* Sapphire blue filter effect */
 }
