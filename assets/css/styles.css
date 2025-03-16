@@ -667,6 +667,15 @@ body.dark-mode .toggle-icon::before {
   height: 60%; /* Smaller icon size */
 }
 
+/* Make Albion button image match SVG icon sizing and styling */
+.Btn img {
+  transition: transform 0.3s ease, filter 0.3s ease;
+  filter: brightness(0) invert(1); /* Make image white */
+  width: 24px; /* Fixed width to match other icons */
+  height: 24px; /* Fixed height to match other icons */
+  object-fit: contain; /* Preserve aspect ratio */
+}
+
 /* Social media icon hover effects with gradients */
 .youtube-btn:hover svg {
   transform: scale(1.15);
@@ -690,7 +699,8 @@ body.dark-mode .toggle-icon::before {
 
 /* New Albion button hover effect */
 .albion-btn:hover img {
-  filter: url(#albion-gradient); /* Albion gradient */
+  transform: scale(1.15); /* Match the scale effect of other icons */
+  filter: brightness(0) invert(0.85) sepia(1) saturate(5) hue-rotate(12deg); /* Gold filter effect */
 }
 
 /* Remove background elements that are no longer needed */
