@@ -117,29 +117,28 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Check for saved sidebar state - default to expanded if no preference saved
     const sidebarState = localStorage.getItem('sidebar-collapsed');
-    if (sidebarState === 'true') {
+    let isCollapsed = sidebarState === 'true'; // Correctly parse the stored value
+
+    if (isCollapsed) {
         body.classList.add('sidebar-collapsed');
-        // Update icon for initial state
-        updateToggleButtonIcon(true);
     } else {
-        // Ensure sidebar is expanded by default
         body.classList.remove('sidebar-collapsed');
-        localStorage.setItem('sidebar-collapsed', 'false');
-        // Update icon for initial state
-        updateToggleButtonIcon(false);
     }
+
+    // Update icon for initial state
+    updateToggleButtonIcon(isCollapsed);
     
     // Toggle sidebar
     if (sidebarToggle) {
         sidebarToggle.addEventListener('click', () => {
-            const willBeCollapsed = !body.classList.contains('sidebar-collapsed');
+            isCollapsed = !body.classList.contains('sidebar-collapsed'); // Toggle the boolean value
             body.classList.toggle('sidebar-collapsed');
             
             // Update the toggle button icon
-            updateToggleButtonIcon(willBeCollapsed);
+            updateToggleButtonIcon(isCollapsed);
             
             // Save preference to localStorage
-            localStorage.setItem('sidebar-collapsed', willBeCollapsed);
+            localStorage.setItem('sidebar-collapsed', isCollapsed);
             
             // Force slideshow to update its layout with delay to allow transition
             if (slideshowManager && typeof slideshowManager.updateForSidebarToggle === 'function') {
