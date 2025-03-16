@@ -772,6 +772,19 @@ body.dark-mode .toggle-icon::before {
 .fullscreen-slideshow .slide {
     background-color: #000; /* Dark background while images load */
     position: relative;
+    display: flex; /* Use flexbox to center content */
+    justify-content: center; /* Center horizontally */
+    align-items: center; /* Center vertically */
+}
+
+/* Style for the placeholder image */
+.fullscreen-slideshow .slide img[src="/assets/placeholder.png"] {
+    width: auto; /* Adjust width as needed */
+    height: auto; /* Adjust height as needed */
+    max-width: 50%; /* Limit the maximum width */
+    max-height: 50%; /* Limit the maximum height */
+    object-fit: contain; /* Make sure the whole image is visible */
+    object-position: center; /* Center the image */
 }
 
 /* Optional loading indicator for images */

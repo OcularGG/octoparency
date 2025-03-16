@@ -129,8 +129,8 @@ document.addEventListener('DOMContentLoaded', () => {
             preloadImg.onerror = () => {
                 slide.classList.remove('loading');
                 img.alt = 'Image failed to load';
-                // Optionally add a placeholder image
-                // img.src = '/assets/placeholder.jpg';
+                img.onerror = null; // prevent infinite loop
+                img.src = '/assets/placeholder.png';
             };
         });
     }
