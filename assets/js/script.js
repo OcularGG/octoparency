@@ -126,66 +126,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // Sidebar collapse functionality - fixed variable conflict
-    const sidebarToggle = document.getElementById('sidebar-toggle');
-    
-    // Check for saved sidebar state - default to expanded if no preference saved
-    const sidebarState = localStorage.getItem('sidebar-collapsed');
-    
-    // If localStorage value is null (first time visitor), set default to expanded
-    if (sidebarState === null) {
-        localStorage.setItem('sidebar-collapsed', 'false');
-    }
-    
-    // Parse the state correctly
-    let isCollapsed = sidebarState === 'true';
-
-    // Apply the appropriate class based on the state
-    if (isCollapsed) {
-        body.classList.add('sidebar-collapsed');
-    } else {
-        body.classList.remove('sidebar-collapsed');
-    }
-
-    // Update icon for initial state
-    updateToggleButtonIcon(isCollapsed);
-    
-    // Toggle sidebar
-    if (sidebarToggle) {
-        sidebarToggle.addEventListener('click', () => {
-            // Correctly toggle the sidebar and update isCollapsed
-            body.classList.toggle('sidebar-collapsed');
-            isCollapsed = body.classList.contains('sidebar-collapsed');
-            
-            // Update the toggle button icon
-            updateToggleButtonIcon(isCollapsed);
-            
-            // Save preference to localStorage
-            localStorage.setItem('sidebar-collapsed', isCollapsed);
-        });
-    }
-
-    // Update toggle button arrow direction based on sidebar state
-    function updateToggleButtonIcon(isCollapsed) {
-        const toggleBars = document.querySelectorAll('.toggle-icon-bar');
-        
-        if (toggleBars.length === 3) {
-            if (isCollapsed) {
-                // Right-pointing arrow when collapsed (points to hidden sidebar)
-                toggleBars[0].style.transform = 'translateY(-6px) rotate(-45deg)';
-                toggleBars[1].style.opacity = '1';
-                toggleBars[1].style.transform = 'scaleX(0.75)';
-                toggleBars[2].style.transform = 'translateY(6px) rotate(45deg)';
-            } else {
-                // Left-pointing arrow when expanded (points to content)
-                toggleBars[0].style.transform = 'translateY(-6px) rotate(45deg)';
-                toggleBars[1].style.opacity = '1';
-                toggleBars[1].style.transform = 'scaleX(0.75)';
-                toggleBars[2].style.transform = 'translateY(6px) rotate(-45deg)';
-            }
-        }
-    }
-
     // Remove all slideshow code and related references
     // (Removed COMPLETELY REWRITTEN SLIDESHOW CODE and REWRITTEN SLIDESHOW CODE sections)
 
