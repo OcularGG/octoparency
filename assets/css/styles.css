@@ -729,14 +729,12 @@ body.dark-mode .toggle-icon::before {
 
 /* Dots/bullets/indicators */
 .dots-container {
-    text-align: center;
-    position: absolute;
-    bottom: 15px;
-    width: 100%;
+    text-align: left; /* Align dots to the left */
     position: absolute;
     bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
+    left: 20px;
+    width: auto; /* Adjust width to content */
+    transform: none; /* Remove translateX */
     z-index: 2;
 }
 
@@ -744,7 +742,7 @@ body.dark-mode .toggle-icon::before {
     cursor: pointer;
     height: 15px;
     width: 15px;
-    margin: 0 2px;
+    margin: 0 5px; /* Add some spacing between dots */
     background-color: #bbb;
     border-radius: 50%;
     display: inline-block;
