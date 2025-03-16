@@ -1,8 +1,17 @@
+/* Reset to eliminate any default margins or padding */
+html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    overflow: hidden; /* Prevent any scrollbars */
+}
+
 body {
     font-family: 'Roboto', sans-serif;
-    margin: 0;
     display: flex;
     transition: background-color 0.3s ease;
+    min-height: 100vh; /* Use viewport height minimum */
+    max-height: 100vh; /* Cap the height */
 }
 
 /* Light mode (default) */
@@ -206,6 +215,8 @@ body.dark-mode .toggle-icon::before {
     display: flex;
     flex-direction: column;
     overflow: hidden; /* Prevent scrollbars */
+    margin: 0;
+    max-height: 100vh;
 }
 
 .login-button {
@@ -233,6 +244,10 @@ body.dark-mode .toggle-icon::before {
     padding: 0;
     width: 100%;
     height: 100%; /* Full height */
+    margin: 0;
+    height: 100vh; /* Force full viewport height */
+    max-height: 100vh;
+    overflow: hidden; /* Prevent any content overflow */
 }
 
 .fullscreen-slideshow {
@@ -241,6 +256,8 @@ body.dark-mode .toggle-icon::before {
     height: 100%;
     position: relative;
     overflow: hidden;
+    margin: 0;
+    padding: 0;
 }
 
 .fullscreen-slideshow .slide {
@@ -263,6 +280,7 @@ body.dark-mode .toggle-icon::before {
     height: 100%;
     position: relative;
     margin: 0;
+    padding: 0;
 }
 
 /* Hide the images by default */
@@ -270,6 +288,11 @@ body.dark-mode .toggle-icon::before {
     display: none;
     width: 100%;
     height: 100%;
+    margin: 0;
+    padding: 0;
+    position: absolute;
+    top: 0;
+    left: 0;
 }
 
 /* When active, display the slide */
