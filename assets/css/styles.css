@@ -763,8 +763,8 @@ body.dark-mode .toggle-icon::before {
 
 .dot {
     cursor: pointer;
-    height: 8px; /* Reduced height for rectangle shape */
-    width: 30px; /* Increased width for rectangle shape */
+    height: 10px; /* Increased height (was 8px) */
+    width: 20px; /* Decreased width (was 30px) */
     margin: 0 5px; /* Add some spacing between dots */
     background-color: rgba(255, 255, 255, 0.5); /* Semi-transparent white */
     border-radius: 2px; /* Slightly rounded corners instead of full circle */
@@ -774,7 +774,7 @@ body.dark-mode .toggle-icon::before {
 
 .active, .dot:hover {
     background: linear-gradient(90deg, #0F52BA, #1E90FF); /* Match the site's blue gradient */
-    width: 40px; /* Make the active indicator slightly wider */
+    width: 25px; /* Make the active indicator slightly wider (was 40px) */
     box-shadow: 0 0 8px rgba(30, 144, 255, 0.5); /* Add subtle glow effect */
 }
 
