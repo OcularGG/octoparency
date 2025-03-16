@@ -105,53 +105,88 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // Enhanced slideshow functionality with loading indicators
+    // Fix for duplicate event listeners - remove the nested DOMContentLoaded
+    // Slideshow functionality
     let slideIndex = 1;
-
-    // Function to preload images for better performance
+    
+    // Preload slideshow images and add error handling
     function preloadSlideImages() {
+        console.log("Preloading slideshow images...");
         const slides = document.querySelectorAll('.slide img');
-        slides.forEach(img => {
-            // Add loading class to slide during image load
+        
+        slides.forEach((img, index) => {
+            console.log(`Checking slide image ${index + 1}: ${img.src}`);
             const slide = img.parentElement;
             slide.classList.add('loading');
             
-            // Create new image object to preload
-            const preloadImg = new Image();
-            preloadImg.src = img.src;
+            // Test if the image is accessible
+            fetch(img.src)
+                .then(response => {
+                    if (!response.ok) {
+                        console.error(`Image ${img.src} returned status: ${response.status}`);
+                        handleImageError(img);
+                    }
+                })
+                .catch(error => {
+                    console.error(`Error loading image ${img.src}:`, error);
+                    handleImageError(img);
+                });
             
-            // Remove loading class when image is loaded
-            preloadImg.onload = () => {
+            // Standard image loading events
+            img.onload = function() {
+                console.log(`Image loaded successfully: ${img.src}`);
                 slide.classList.remove('loading');
             };
             
-            // Handle errors gracefully
-            preloadImg.onerror = () => {
-                slide.classList.remove('loading');
-                img.alt = 'Image failed to load';
-                img.onerror = null; // prevent infinite loop
-                img.src = '/assets/placeholder.png';
+            img.onerror = function() {
+                console.error(`Failed to load image: ${img.src}`);
+                handleImageError(img);
             };
         });
     }
-
-    // Call preload when DOM is ready
-    document.addEventListener('DOMContentLoaded', preloadSlideImages);
-
+    
+    function handleImageError(img) {
+        const slide = img.parentElement;
+        slide.classList.remove('loading');
+        
+        // Try relative path if absolute path fails
+        if (img.src.startsWith('/')) {
+            const relativePath = img.src.substring(1); // Remove leading slash
+            console.log(`Trying relative path: ${relativePath}`);
+            img.src = relativePath;
+            return;
+        }
+        
+        // If that fails too, use a placeholder
+        img.onerror = null; // Prevent infinite loop
+        img.src = 'https://via.placeholder.com/800x600?text=Image+Not+Found';
+        
+        // Add a message inside the slide
+        const message = document.createElement('div');
+        message.className = 'error-message';
+        message.textContent = 'Image could not be loaded';
+        slide.appendChild(message);
+    }
+    
     // Next/previous controls
-    function plusSlides(n) {
+    window.plusSlides = function(n) {
         showSlides(slideIndex += n);
-    }
-
+    };
+    
     // Thumbnail image controls
-    function currentSlide(n) {
+    window.currentSlide = function(n) {
         showSlides(slideIndex = n);
-    }
-
+    };
+    
     function showSlides(n) {
         let i;
         let slides = document.getElementsByClassName("slide");
         let dots = document.getElementsByClassName("dot");
+        
+        if (slides.length === 0) {
+            console.error("No slides found!");
+            return;
+        }
         
         // Handle wrapping around
         if (n > slides.length) {slideIndex = 1}
@@ -168,31 +203,36 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         // Show the current slide and activate corresponding dot
-        if (slides.length > 0) {
-            slides[slideIndex-1].style.display = "block";
-            
-            if (dots.length > 0 && slideIndex <= dots.length) {
-                dots[slideIndex-1].className += " active";
-            }
+        console.log(`Showing slide ${slideIndex} of ${slides.length}`);
+        slides[slideIndex-1].style.display = "block";
+        
+        if (dots.length > 0 && slideIndex <= dots.length) {
+            dots[slideIndex-1].className += " active";
         }
     }
-
-    // Initialize the slideshow
-    document.addEventListener('DOMContentLoaded', () => {
-        showSlides(slideIndex);
-        
-        // Auto advance slides every 6 seconds
-        setInterval(() => {
-            plusSlides(1);
-        }, 6000);
-        
-        // Make the arrow controls work
-        document.querySelector('.prev').addEventListener('click', () => plusSlides(-1));
-        document.querySelector('.next').addEventListener('click', () => plusSlides(1));
-        
-        // Make the dot controls work
-        document.querySelectorAll('.dot').forEach((dot, index) => {
-            dot.addEventListener('click', () => currentSlide(index + 1));
+    
+    // Initialize slideshow
+    preloadSlideImages();
+    showSlides(slideIndex);
+    
+    // Auto advance slides every 6 seconds
+    setInterval(function() {
+        plusSlides(1);
+    }, 6000);
+    
+    // Wire up event listeners for arrow navigation
+    document.querySelector('.prev').addEventListener('click', function() {
+        plusSlides(-1);
+    });
+    
+    document.querySelector('.next').addEventListener('click', function() {
+        plusSlides(1);
+    });
+    
+    // Make the dot controls work
+    document.querySelectorAll('.dot').forEach(function(dot, index) {
+        dot.addEventListener('click', function() {
+            currentSlide(index + 1);
         });
     });
 

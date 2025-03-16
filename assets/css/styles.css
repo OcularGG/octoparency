@@ -838,3 +838,41 @@ body.dark-mode .toggle-icon::before {
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
     letter-spacing: 1px;
 }
+
+/* Make the first slide visible by default */
+.slide:first-child {
+    display: block;
+}
+
+/* Debug styles for slideshow */
+.error-message {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 20px;
+    border-radius: 4px;
+    font-size: 16px;
+    z-index: 10;
+}
+
+/* Ensure images are visible */
+.fullscreen-slideshow .slide img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    display: block;
+    min-height: 300px; /* Ensure a minimum height */
+}
+
+/* Optional - Add background placeholder for slides */
+.slide {
+    background-color: #202020;
+    background-image: linear-gradient(45deg, #333 25%, transparent 25%, transparent 75%, #333 75%, #333),
+                      linear-gradient(45deg, #333 25%, transparent 25%, transparent 75%, #333 75%, #333);
+    background-size: 60px 60px;
+    background-position: 0 0, 30px 30px;
+}
