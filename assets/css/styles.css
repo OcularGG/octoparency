@@ -541,8 +541,8 @@ body.dark-mode .toggle-icon::before {
 
 /* Redesigned social buttons with transparent background */
 .Btn {
-  width: 45px;
-  height: 45px;
+  width: 40px; /* Slightly smaller button */
+  height: 40px; /* Slightly smaller button */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -562,36 +562,36 @@ body.dark-mode .toggle-icon::before {
   justify-content: center;
   background: transparent; /* Transparent background */
   transition: all 0.3s ease;
-  border: none; /* Remove border */
+  border: none;
 }
 
-/* Define gradient for SVG fill */
+/* Define SVG fill for default state (white) */
 .Btn svg {
-  transition: transform 0.3s ease;
-  fill: url(#blue-gradient); /* Will be defined in the HTML */
-  width: 70%; /* Adjust size as needed */
-  height: 70%;
+  transition: transform 0.3s ease, fill 0.3s ease;
+  fill: white; /* Default color: white */
+  width: 60%; /* Smaller icon size */
+  height: 60%; /* Smaller icon size */
 }
 
-/* Social media icon hover effects */
+/* Social media icon hover effects with gradients */
 .youtube-btn:hover svg {
-  fill: #FF0000; /* YouTube red */
   transform: scale(1.15);
+  fill: url(#youtube-gradient); /* YouTube gradient */
 }
 
 .discord-btn:hover svg {
-  fill: #7289DA; /* Discord blue/purple */
   transform: scale(1.15);
+  fill: url(#discord-gradient); /* Discord gradient */
 }
 
 .reddit-btn:hover svg {
-  fill: #FF5700; /* Reddit orange */
   transform: scale(1.15);
+  fill: url(#reddit-gradient); /* Reddit gradient */
 }
 
 .github-btn:hover svg {
-  fill: #181818; /* GitHub dark */
   transform: scale(1.15);
+  fill: url(#github-gradient); /* GitHub gradient */
 }
 
 /* Remove background elements that are no longer needed */
