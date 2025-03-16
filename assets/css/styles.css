@@ -727,7 +727,7 @@ body.dark-mode .toggle-icon::before {
     border-radius: 5px;
 }
 
-/* Dots/bullets/indicators */
+/* Dots/bullets/indicators - updated to use the site's gradient */
 .dots-container {
     text-align: left; /* Align dots to the left */
     position: absolute;
@@ -740,17 +740,19 @@ body.dark-mode .toggle-icon::before {
 
 .dot {
     cursor: pointer;
-    height: 15px;
-    width: 15px;
+    height: 8px; /* Reduced height for rectangle shape */
+    width: 30px; /* Increased width for rectangle shape */
     margin: 0 5px; /* Add some spacing between dots */
-    background-color: #bbb;
-    border-radius: 50%;
+    background-color: rgba(255, 255, 255, 0.5); /* Semi-transparent white */
+    border-radius: 2px; /* Slightly rounded corners instead of full circle */
     display: inline-block;
-    transition: background-color 0.6s ease;
+    transition: all 0.3s ease; /* Transition for both background color and width */
 }
 
 .active, .dot:hover {
-    background-color: #717171;
+    background: linear-gradient(90deg, #0F52BA, #1E90FF); /* Match the site's blue gradient */
+    width: 40px; /* Make the active indicator slightly wider */
+    box-shadow: 0 0 8px rgba(30, 144, 255, 0.5); /* Add subtle glow effect */
 }
 
 /* Improving slideshow image display for external images */
