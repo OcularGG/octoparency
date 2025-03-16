@@ -509,18 +509,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Single resize event listener that handles everything
     window.addEventListener('resize', () => {
-        // Reset mobile menu state on larger screens
-        if (window.innerWidth > 768) {
-            const sidebarNav = document.getElementById('sidebar-nav');
-            const mobileMenuToggle = document.getElementById('mobile-menu-toggle');
-            
-            if (sidebarNav) sidebarNav.classList.remove('expanded');
-            if (mobileMenuToggle) mobileMenuToggle.classList.remove('open');
-        }
-        
+        // Removed automatic mobile menu state reset to preserve the selected sidebar state
+
         // Adjust slideshow layout
         if (slideshowManager && typeof slideshowManager.adjustLayout === 'function') {
             slideshowManager.adjustLayout();
+        }
+        
+        // Update sidebar toggle icon after resize in case layout changes affect its visibility
+        const sidebarToggle = document.getElementById('sidebar-toggle');
+        if (sidebarToggle) {
+            updateToggleButtonIcon(document.body.classList.contains('sidebar-collapsed'));
         }
     });
 
