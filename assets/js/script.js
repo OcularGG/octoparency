@@ -106,27 +106,56 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Slideshow functionality
-    let slideIndex = 0;
-    showSlides();
+    let slideIndex = 1;
+    showSlides(slideIndex);
 
-    function showSlides() {
-        let slides = document.getElementsByClassName("slide");
-        let dots = document.getElementsByClassName("dot");
-        for (let i = 0; i < slides.length; i++) {
-            slides[i].style.display = "none";  
-        }
-        slideIndex++;
-        if (slideIndex > slides.length) {slideIndex = 1}    
-        for (let i = 0; i < dots.length; i++) {
-            dots[i].className = dots[i].className.replace(" active", "");
-        }
-        slides[slideIndex-1].style.display = "block";  
-        dots[slideIndex-1].className += " active";
-        setTimeout(showSlides, 3000); // Change image every 3 seconds
+    // Next/previous controls
+    function plusSlides(n) {
+        showSlides(slideIndex += n);
     }
 
+    // Thumbnail image controls
     function currentSlide(n) {
-        slideIndex = n;
-        showSlides();
+        showSlides(slideIndex = n);
+    }
+
+    function showSlides(n) {
+        let i;
+        let slides = document.getElementsByClassName("slide");
+        let dots = document.getElementsByClassName("dot");
+        
+        // Handle wrapping around
+        if (n > slides.length) {slideIndex = 1}
+        if (n < 1) {slideIndex = slides.length}
+        
+        // Hide all slides
+        for (i = 0; i < slides.length; i++) {
+            slides[i].style.display = "none";
+        }
+        
+        // Remove active class from all dots
+        for (i = 0; i < dots.length; i++) {
+            dots[i].className = dots[i].className.replace(" active", "");
+        }
+        
+        // Show the current slide and activate corresponding dot
+        slides[slideIndex-1].style.display = "block";
+        dots[slideIndex-1].className += " active";
+    }
+
+    // Auto advance slides every 5 seconds
+    setInterval(function() {
+        plusSlides(1);
+    }, 5000);
+
+    // Theme toggle functionality
+    document.getElementById('theme-toggle-input').addEventListener('change', function() {
+        document.body.classList.toggle('dark-mode');
+    });
+
+    // Check if user prefers dark mode
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.body.classList.add('dark-mode');
+        document.getElementById('theme-toggle-input').checked = true;
     }
 });
