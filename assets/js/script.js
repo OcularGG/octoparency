@@ -301,3 +301,80 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('theme-toggle-input').checked = true;
     }
 });
+
+// Next/previous controls - make sure these are globally accessible
+window.plusSlides = function(n) {
+    showSlides(slideIndex += n);
+}
+
+// Thumbnail image controls - make sure these are globally accessible
+window.currentSlide = function(n) {
+    showSlides(slideIndex = n);
+}
+
+function showSlides(n) {
+    let i;
+    let slides = document.getElementsByClassName("slide");
+    let dots = document.getElementsByClassName("dot");
+
+    if (slides.length === 0) {
+        console.error("No slides found!");
+        return;
+    }
+
+    // Handle wrapping around
+    if (n > slides.length) { slideIndex = 1 }
+    if (n < 1) { slideIndex = slides.length }
+
+    // Hide all slides
+    for (i = 0; i < slides.length; i++) {
+        slides[i].style.display = "none";
+    }
+
+    // Remove active class from all dots
+    for (i = 0; i < dots.length; i++) {
+        dots[i].className = dots[i].className.replace(" active", "");
+    }
+
+    // Show the current slide and activate corresponding dot
+    slides[slideIndex - 1].style.display = "block";
+    if (dots.length > 0) {
+        dots[slideIndex - 1].className += " active";
+    }
+}
+
+// Initialize slideshow with these functions in the right order
+preloadSlideImages();
+showSlides(slideIndex);
+
+function setupSlideNavigation() {
+    // Auto advance slides every 6 seconds
+    setInterval(function() {
+        plusSlides(1);
+    }, 6000);
+
+    // Wire up event listeners for arrow navigation
+    const prevArrow = document.querySelector('.prev');
+    const nextArrow = document.querySelector('.next');
+
+    if (prevArrow) {
+        prevArrow.addEventListener('click', function() {
+            plusSlides(-1);
+        });
+    }
+
+    if (nextArrow) {
+        nextArrow.addEventListener('click', function() {
+            plusSlides(1);
+        });
+    }
+
+    // Make the dot controls work - ensure we preserve their styling
+    document.querySelectorAll('.dot').forEach(function(dot, index) {
+        dot.addEventListener('click', function() {
+            currentSlide(index + 1);
+        });
+    });
+}
+
+setupSlideNavigation();
