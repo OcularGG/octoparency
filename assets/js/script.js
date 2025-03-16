@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // Simplified logo transition logic
+    // Simplified logo transition logic - synchronized timing
     const logo = document.querySelector('.logo');
     const logos = [
         '/assets/ocular-logos/logo1.png',
@@ -13,9 +13,9 @@ document.addEventListener('DOMContentLoaded', () => {
         '/assets/ocular-logos/logo9.png'
     ];
     let currentLogoIndex = 0;
-    let isTransitioning = false; // Add flag to prevent overlapping transitions
+    let isTransitioning = false;
     
-    // Preload all images for smoother transitions
+    // Preload all images
     const preloadImages = () => {
         logos.forEach(src => {
             const img = new Image();
@@ -30,22 +30,9 @@ document.addEventListener('DOMContentLoaded', () => {
         existingClone.parentNode.removeChild(existingClone);
     }
     
-    // Fix logo positioning
-    const style = document.createElement('style');
-    style.textContent = `
-        .logo-container {
-            position: relative;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        .logo {
-            transition: opacity 1.5s ease-in-out;
-            position: static;
-            width: 100px;
-        }
-    `;
-    document.head.appendChild(style);
+    // Track animation state for coordinating with CSS animations
+    const sidebarLine = document.querySelector('.sidebar::after');
+    const siteTitle = document.querySelector('.site-title');
     
     // Clean, simple crossfade transition
     const transitionLogos = () => {
@@ -74,14 +61,13 @@ document.addEventListener('DOMContentLoaded', () => {
             }, 1000);
         };
         
-        // Add error handling in case image fails to load
         tempImg.onerror = () => {
             console.error('Failed to load next logo image:', tempImg.src);
-            isTransitioning = false; // Release transition lock on error
+            isTransitioning = false;
         };
     };
     
-    // Start transitions with a cinematic timing
+    // Set exact interval to 4.5 seconds (4500ms) to match CSS animations
     setInterval(transitionLogos, 4500);
 
     // Dark mode toggle - fixed potential duplicate listeners

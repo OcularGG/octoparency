@@ -49,6 +49,7 @@ body.dark-mode {
     z-index: 50; /* Ensure sidebar appears above other content */
 }
 
+/* Animated sidebar border - synced with logo cycle (4.5s) */
 .sidebar::after {
     content: '';
     position: absolute;
@@ -56,7 +57,9 @@ body.dark-mode {
     right: 0;
     width: 5px; /* Width of the gradient line */
     height: 100%;
-    background: var(--sidebar-border-gradient);
+    background-image: linear-gradient(to bottom, #0F52BA, #1E90FF);
+    animation: colorShift 4.5s ease-in-out infinite;
+    animation-delay: 0s; /* No delay to match logo */
 }
 
 .logo-container {
@@ -79,19 +82,21 @@ body.dark-mode {
     filter: none;
 }
 
-/* New title styling for OctoAuth */
+/* Animated title styling - synced with logo */
 .site-title {
     text-align: center;
     font-size: 24px;
     font-weight: bold;
     margin: 0 0 20px 0;
-    background: linear-gradient(90deg, #0F52BA, #1E90FF);
+    background-image: linear-gradient(90deg, #0F52BA, #1E90FF);
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
     width: 100%;
     padding: 0 10px;
     letter-spacing: 0.5px;
+    animation: textColorShift 4.5s ease-in-out infinite;
+    animation-delay: 0s; /* No delay to match logo */
 }
 
 .sidebar-nav {
@@ -1380,5 +1385,107 @@ body.sidebar-collapsed .main-content {
     .sidebar-nav .social-buttons-container.mobile-only {
         display: flex;
         margin: 15px 20px;
+    }
+}
+
+/* Add gradient animation keyframes */
+@keyframes gradientShift {
+    0% {
+        background: linear-gradient(to bottom, #0F52BA, #1E90FF);
+    }
+    25% {
+        background: linear-gradient(to bottom, #4B6CB7, #182848);
+    }
+    50% {
+        background: linear-gradient(to bottom, #2980B9, #6DD5FA);
+    }
+    75% {
+        background: linear-gradient(to bottom, #0083B0, #00B4DB);
+    }
+    100% {
+        background: linear-gradient(to bottom, #0F52BA, #1E90FF);
+    }
+}
+
+@keyframes textGradientShift {
+    0% {
+        background: linear-gradient(90deg, #0F52BA, #1E90FF);
+        -webkit-background-clip: text;
+        background-clip: text;
+    }
+    25% {
+        background: linear-gradient(90deg, #4B6CB7, #182848);
+        -webkit-background-clip: text;
+        background-clip: text;
+    }
+    50% {
+        background: linear-gradient(90deg, #2980B9, #6DD5FA);
+        -webkit-background-clip: text;
+        background-clip: text;
+    }
+    75% {
+        background: linear-gradient(90deg, #0083B0, #00B4DB);
+        -webkit-background-clip: text;
+        background-clip: text;
+    }
+    100% {
+        background: linear-gradient(90deg, #0F52BA, #1E90FF);
+        -webkit-background-clip: text;
+        background-clip: text;
+    }
+}
+
+/* Replace previous keyframe animations with these synchronized ones */
+@keyframes colorShift {
+    0%, 100% {
+        background-image: linear-gradient(to bottom, #0F52BA, #1E90FF); /* Logo 1 colors */
+    }
+    12.5% {
+        background-image: linear-gradient(to bottom, #4B6CB7, #182848); /* Logo 2 colors */
+    }
+    25% {
+        background-image: linear-gradient(to bottom, #2980B9, #6DD5FA); /* Logo 3 colors */
+    }
+    37.5% {
+        background-image: linear-gradient(to bottom, #0083B0, #00B4DB); /* Logo 4 colors */
+    }
+    50% {
+        background-image: linear-gradient(to bottom, #1A2980, #26D0CE); /* Logo 5 colors */
+    }
+    62.5% {
+        background-image: linear-gradient(to bottom, #4568DC, #B06AB3); /* Logo 6 colors */
+    }
+    75% {
+        background-image: linear-gradient(to bottom, #3A7BD5, #3A6073); /* Logo 7 colors */
+    }
+    87.5% {
+        background-image: linear-gradient(to bottom, #005AA7, #FFFDE4); /* Logo 8 colors */
+    }
+}
+
+@keyframes textColorShift {
+    0%, 100% {
+        background-image: linear-gradient(90deg, #0F52BA, #1E90FF); /* Logo 1 colors */
+    }
+    12.5% {
+        background-image: linear-gradient(90deg, #4B6CB7, #182848); /* Logo 2 colors */
+    }
+    25% {
+        background-image: linear-gradient(90deg, #2980B9, #6DD5FA); /* Logo 3 colors */
+    }
+    37.5% {
+        background-image: linear-gradient(90deg, #0083B0, #00B4DB); /* Logo 4 colors */
+    }
+    50% {
+        background-image: linear-gradient(90deg, #1A2980, #26D0CE); /* Logo 5 colors */
+    }
+    62.5% {
+        background-image: linear-gradient(90deg, #4568DC, #B06AB3); /* Logo 6 colors */
+    }
+    75% {
+        background-image: linear-gradient(90deg, #3A7BD5, #3A6073); /* Logo 7 colors */
+    }
+    87.5% {
+        background-image: linear-gradient(90deg, #005AA7, #FFFDE4); /* Logo 8 colors */
     }
 }
