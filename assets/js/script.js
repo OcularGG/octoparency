@@ -131,12 +131,18 @@ document.addEventListener('DOMContentLoaded', () => {
             debugInfo.innerHTML = `Attempted path: ${img.src}`;
             slide.appendChild(debugInfo);
             
-            // Try multiple possible paths
+            // Try multiple possible paths - prioritize the images/ folder and try different extensions
             const tryPaths = [
                 img.src, // Original path
                 img.src.replace(/^\//, ''), // Remove leading slash if present
-                img.src.startsWith('assets') ? img.src : 'assets/' + img.src.split('/').pop(), // Try assets/ folder
-                img.src.startsWith('assets') ? '/' + img.src : '/assets/slideshow-images/' + img.src.split('/').pop() // Try absolute /assets/ path
+                '/images/' + img.getAttribute('data-original-name'), // Root images folder with original filename
+                'images/' + img.getAttribute('data-original-name'), // Relative images folder
+                // Try different extensions
+                '/images/' + img.getAttribute('data-original-name').replace(/\.(png|jpeg|jpg)$/, '.jpeg'),
+                '/images/' + img.getAttribute('data-original-name').replace(/\.(png|jpeg|jpg)$/, '.jpg'),
+                '/images/' + img.getAttribute('data-original-name').replace(/\.(png|jpeg|jpg)$/, '.png'),
+                // Fallback to assets folder
+                '/assets/slideshow-images/' + img.getAttribute('data-original-name')
             ];
             
             // Function to try loading an image path
