@@ -112,6 +112,36 @@ document.addEventListener('DOMContentLoaded', () => {
     // Enhanced image loading diagnostic function
     function preloadSlideImages() {
         console.log("Preloading slideshow images...");
+        const slideshowContainer = document.getElementById('slideshow-container');
+        
+        // Define image filenames
+        const imageFilenames = ['slide1.jpeg', 'slide2.jpeg', 'slide3.jpeg', 'slide4.jpeg', 'slide5.jpeg', 'slide6.jpeg'];
+        
+        // Function to create a slide element
+        function createSlide(filename, index) {
+            const slide = document.createElement('div');
+            slide.className = 'slide fade';
+            
+            const img = document.createElement('img');
+            img.src = `/images/${filename}`;
+            img.alt = `Slide ${index + 1}`;
+            img.setAttribute('data-original-name', filename);
+            
+            const textDiv = document.createElement('div');
+            textDiv.className = 'text';
+            textDiv.textContent = 'OCULAR';
+            
+            slide.appendChild(img);
+            slide.appendChild(textDiv);
+            return slide;
+        }
+        
+        // Generate slides dynamically
+        imageFilenames.forEach((filename, index) => {
+            const slide = createSlide(filename, index);
+            slideshowContainer.appendChild(slide);
+        });
+        
         const slides = document.querySelectorAll('.slide img');
         
         slides.forEach((img, index) => {
