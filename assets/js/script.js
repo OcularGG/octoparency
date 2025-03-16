@@ -256,3 +256,31 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
+
+// ---- Sidebar Menu Rewrite Start ----
+(function initSidebarMenu() {
+    const sidebar = document.getElementById('sidebar'); // Ensure your sidebar element has id="sidebar"
+    const toggleBtn = document.getElementById('sidebar-toggle'); // And your toggle button id="sidebar-toggle"
+    if (!sidebar || !toggleBtn) {
+        console.error("Sidebar or toggle button not found");
+        return;
+    }
+    // Retrieve stored state; default to expanded (false)
+    let collapsed = localStorage.getItem('sidebar-collapsed') === 'true';
+    setSidebarState(collapsed);
+    toggleBtn.addEventListener('click', () => {
+        collapsed = !collapsed;
+        setSidebarState(collapsed);
+        localStorage.setItem('sidebar-collapsed', collapsed);
+    });
+    function setSidebarState(collapsed) {
+         if (collapsed) {
+             sidebar.classList.add('collapsed');
+             toggleBtn.textContent = '→'; // Show arrow indicating expansion
+         } else {
+             sidebar.classList.remove('collapsed');
+             toggleBtn.textContent = '←'; // Show arrow indicating collapse
+         }
+    }
+})();
+// ---- Sidebar Menu Rewrite End ----
