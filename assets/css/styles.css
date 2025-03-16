@@ -899,3 +899,26 @@ body.dark-mode .toggle-icon::before {
     background-size: 60px 60px;
     background-position: 0 0, 30px 30px;
 }
+
+/* Debug info styles */
+.debug-info {
+    font-family: monospace;
+    line-height: 1.4;
+    overflow: auto;
+    max-height: 80%;
+}
+
+/* Make error messages more visible */
+.error-message {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: rgba(255, 0, 0, 0.7);
+    color: white;
+    padding: 20px;
+    border-radius: 4px;
+    font-size: 16px;
+    z-index: 100;
+    text-align: center;
+}

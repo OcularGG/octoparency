@@ -109,39 +109,80 @@ document.addEventListener('DOMContentLoaded', () => {
     // Slideshow functionality
     let slideIndex = 1;
     
-    // Preload slideshow images and add error handling
+    // Enhanced image loading diagnostic function
     function preloadSlideImages() {
         console.log("Preloading slideshow images...");
         const slides = document.querySelectorAll('.slide img');
         
         slides.forEach((img, index) => {
-            console.log(`Checking slide image ${index + 1}: ${img.src}`);
+            // Log detailed path information
+            console.log(`Slide ${index + 1}:`);
+            console.log(`  - Current path: "${img.src}"`);
+            console.log(`  - Absolute URL: "${new URL(img.src, window.location.href).href}"`);
+            console.log(`  - Image exists check starting...`);
+            
             const slide = img.parentElement;
             slide.classList.add('loading');
             
-            // Test if the image is accessible
-            fetch(img.src)
-                .then(response => {
-                    if (!response.ok) {
-                        console.error(`Image ${img.src} returned status: ${response.status}`);
-                        handleImageError(img);
-                    }
-                })
-                .catch(error => {
-                    console.error(`Error loading image ${img.src}:`, error);
-                    handleImageError(img);
-                });
+            // Create a debugging element to show path information on the slide
+            const debugInfo = document.createElement('div');
+            debugInfo.className = 'debug-info';
+            debugInfo.style.cssText = 'position:absolute; top:10px; left:10px; background:rgba(0,0,0,0.7); color:white; padding:5px; border-radius:3px; font-size:12px; max-width:80%; z-index:100;';
+            debugInfo.innerHTML = `Attempted path: ${img.src}`;
+            slide.appendChild(debugInfo);
             
-            // Standard image loading events
-            img.onload = function() {
-                console.log(`Image loaded successfully: ${img.src}`);
-                slide.classList.remove('loading');
-            };
+            // Try multiple possible paths
+            const tryPaths = [
+                img.src, // Original path
+                img.src.replace(/^\//, ''), // Remove leading slash if present
+                img.src.startsWith('assets') ? img.src : 'assets/' + img.src.split('/').pop(), // Try assets/ folder
+                img.src.startsWith('assets') ? '/' + img.src : '/assets/slideshow-images/' + img.src.split('/').pop() // Try absolute /assets/ path
+            ];
             
-            img.onerror = function() {
-                console.error(`Failed to load image: ${img.src}`);
-                handleImageError(img);
-            };
+            // Function to try loading an image path
+            function tryLoadImage(pathIndex) {
+                if (pathIndex >= tryPaths.length) {
+                    // All paths failed, use placeholder
+                    console.error(`All paths failed for slide ${index + 1}`);
+                    img.onerror = null;
+                    img.src = 'https://via.placeholder.com/800x600?text=Image+Not+Found';
+                    debugInfo.innerHTML += `<br>❌ All paths failed`;
+                    return;
+                }
+                
+                const path = tryPaths[pathIndex];
+                console.log(`  - Trying path: "${path}"`);
+                debugInfo.innerHTML += `<br>Trying: ${path}`;
+                
+                const testImg = new Image();
+                
+                testImg.onload = function() {
+                    console.log(`  - SUCCESS! Image loaded from "${path}"`);
+                    img.src = path;
+                    img.onerror = null; // Clear error handler
+                    slide.classList.remove('loading');
+                    debugInfo.innerHTML += `<br>✅ Success with: ${path}`;
+                    
+                    // Remove debug info after success and delay
+                    setTimeout(() => {
+                        if (debugInfo.parentNode) {
+                            debugInfo.parentNode.removeChild(debugInfo);
+                        }
+                    }, 5000);
+                };
+                
+                testImg.onerror = function() {
+                    console.log(`  - Failed to load from "${path}"`);
+                    debugInfo.innerHTML += `<br>❌ Failed: ${path}`;
+                    // Try next path
+                    tryLoadImage(pathIndex + 1);
+                };
+                
+                testImg.src = path;
+            }
+            
+            // Start trying paths
+            tryLoadImage(0);
         });
     }
     
